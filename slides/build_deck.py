@@ -147,11 +147,12 @@ def draw_weekly():
 
 # ---------------------------------------------------------------- what the owner checked (from the ticked review boxes)
 PLAIN = {
-    "A1": "re-ran the whole analysis from scratch and the checks passed",
-    "A2": "recomputed a headline number from the raw flight file",
-    "A3": "recomputed the value of the warning list from the saved predictions",
-    "A4": "read how we stop the model from using information it would not have yet",
-    "A5": "confirmed that the October to December test months stayed untouched until the end",
+    "A1": "re-ran everything from scratch; the checks passed",
+    "A2": "recomputed a headline number from the raw data",
+    "A3": "recomputed the value of the warning list",
+    "A4": "read how the models are kept from using future information",
+    "A5": "confirmed the test months stay untouched until the end",
+    "A6": "read the leak found by the independent review and how it was fixed",
     "B1": "went through the data-cleaning decisions", "B2": "went through the findings and their checks",
     "B3": "went through the destination groups", "B4": "recomputed a monthly number from the raw data",
     "B5": "went through each column built for the models", "B6": "went through the model results",
@@ -161,7 +162,11 @@ PLAIN = {
 
 def ticked_checks():
     text = (ROOT / "second-brain" / "review-checklist.md").read_text(encoding="utf-8")
-    return [PLAIN[i] for i in re.findall(r"- \[x\] \*\*([AB]\d)\.", text) if i in PLAIN]
+    ids = re.findall(r"- \[x\] \*\*([AB]\d)\.", text)
+    out = [PLAIN[i] for i in ids if i.startswith("A") and i in PLAIN]
+    b = [i for i in ids if i.startswith("B")]
+    out += ["went through all 8 notebooks and the log of mistakes"] if len(b) == 8 else [PLAIN[i] for i in b if i in PLAIN]
+    return out, "A6" in ids
 
 
 # ---------------------------------------------------------------- PowerPoint helpers
@@ -415,9 +420,10 @@ notes(s, 11, "Card 1 is ready to use as a daily warning list. Card 2 helps order
 
 # 12 limits, next steps, AI (dark)
 morning, evening = recall_by_hour.iloc[0], recall_by_hour.iloc[-1]
-checks = ticked_checks()
+checks, fixes_checked = ticked_checks()
 if checks:
-    owner = [{"text": "What I checked myself:", "size": 14, "bold": True, "color": "FFFFFF", "after": 3}] + [{"text": c, "size": 14, "color": "FFFFFF", "bullet": True, "after": 2} for c in checks[:7]]
+    owner = [{"text": "What I checked myself:", "size": 14, "bold": True, "color": "FFFFFF", "after": 3}] + [{"text": c, "size": 14, "color": "FFFFFF", "bullet": True, "after": 2} for c in checks[:7]] + (
+        [] if fixes_checked else [{"text": "My review ran while the last fixes were being made; I am re-checking those fixes.", "size": 14, "color": "FFFFFF", "after": 0}])
 else:
     owner = [{"text": "<b>What I checked myself:</b> my review of the analysis, the numbers and the code is in progress. This list is filled in from the checks I tick.", "size": 14, "color": "FFFFFF"}]
 s = new_slide(12, "What we do not know, what comes next, and how AI helped", dark=True)
@@ -430,8 +436,8 @@ nxt = [{**H, "text": "What comes next"}] + [{"text": t, "size": 16, "color": "FF
                                       ["Confirm the two capacities with the agency.", "Add a second year, so seasons can be learned.", "Set a separate warning quota for each part of the day.", "Add the agency's own costs to put a value on each warning."]]
 ai = [{**H, "text": "How AI helped"},
       {"text": "Claude Code, an AI assistant, wrote the code, ran the analysis and drafted these slides, following my instructions. It also recorded its own mistakes and corrections.", "size": 14, "color": "FFFFFF", "after": 6}] + owner
-for i, (content, w) in enumerate([(limits, 3.85), (nxt, 3.45), (ai, 4.4)]):
-    x = MX + [0, 4.05, 7.7][i]
+for i, (content, w) in enumerate([(limits, 3.6), (nxt, 3.0), (ai, 5.13)]):
+    x = MX + [0, 3.8, 7.0][i]
     add_card(s, x, 1.75, w, 4.6, content, f"Panel {i + 1}", fill=NAVY2, text_margin=0.25)
 notes(s, 12, "Be upfront about the limits. The last panel says exactly what the AI did and what the owner personally checked.")
 
