@@ -71,6 +71,7 @@ morning_pct, evening_pct = pcts(f_hour)[:2]
 late_plane_pct, ok_plane_pct = pcts(f_domino)[:2]
 airline_best, best_pct, airline_worst, worst_pct = re.search(r"airlines, (.+?) has (\d+)% of flights late or cancelled and (.+?) has (\d+)%", f_airline).groups()
 plane_points, weather_points = re.search(r"adds (\d+) points and bad weather adds (\d+)", f_weather).groups()
+dom_adj = csv("02_domino_adjusted.csv").iloc[0]
 ten_days_pct = int(re.search(r"(\d+)% of all cancellations", f_cancel).group(1))
 thin_late = int(re.search(r"(\d+)% of flights late", groups.loc[2, "typical"]).group(1))
 july = months.set_index("month").loc[7]
@@ -344,10 +345,11 @@ chart_slide(4, "Delays build up through the day",
 
 # 5 domino
 say5 = (f"When the same plane's earlier flight left more than 15 minutes late, <b>{src(5, f'{late_plane_pct}%', '02_findings.csv', 'number (row 2)')}</b> of its next flights are late or cancelled, "
-        f"against <b>{src(5, f'{ok_plane_pct}%', '02_findings.csv', 'number (row 2)')}</b> otherwise. The agency can see this two hours ahead.")
-chart_slide(5, "A late plane delays its next flight, and that matters more than the weather",
+        f"against <b>{src(5, f'{ok_plane_pct}%', '02_findings.csv', 'number (row 2)')}</b> otherwise. Part of that is a shared bad day: within the same day, airport and part of the day, the overall gap of "
+        f"{src(5, f'{dom_adj.raw_gap_points:.0f}', '02_domino_adjusted.csv', 'raw_gap_points')} points shrinks to {src(5, f'{dom_adj.same_day_gap_points:.0f}', '02_domino_adjusted.csv', 'same_day_gap_points')}. The agency can see the earlier flight two hours ahead.")
+chart_slide(5, "A late earlier flight is a strong warning sign, stronger than bad weather",
             f'+{src(5, plane_points, "02_findings.csv", "number (row 4)")} vs +{src(5, weather_points, "02_findings.csv", "number (row 4)")}',
-            "points of extra risk: a late earlier flight against bad weather", ORANGE, say5, prepared("02_weather.png"), "Risk after a late earlier flight and in bad weather")
+            "points of extra risk, each measured with the other absent: a late earlier flight against bad weather", ORANGE, say5, prepared("02_weather.png"), "Risk after a late earlier flight and in bad weather")
 
 # 6 airlines
 say6 = "Even when we compare flights from the same airport at the same time of day, the gap remains. <b>For a tight connection, prefer the steadier airlines.</b>"
@@ -359,7 +361,7 @@ chart_slide(6, "Airlines differ a lot, and airport and time of day do not explai
 steady, build, thin = groups.loc[0], groups.loc[1], groups.loc[2]
 s = new_slide(7, "Destinations fall into three types, each needing a different action")
 for i, (color, head, body) in enumerate([
-        (BLUE, f"{src(7, str(int(steady['size'])), '03_groups.csv', 'size (steady)')} steady routes", "Short delays all day. The safe default."),
+        (BLUE, f"{src(7, str(int(steady['size'])), '03_groups.csv', 'size (steady)')} steady routes", "Short delays all day, but a few more cancellations. Keep a backup for tight connections."),
         (ORANGE, f"{src(7, str(int(build['size'])), '03_groups.csv', 'size (build-up)')} afternoon build-up routes", "Fine in the morning, late after noon. Offer a morning flight."),
         (AQUA, f"{src(7, str(int(thin['size'])), '03_groups.csv', 'size (thin)')} thin routes", f"About one flight a day, {src(7, f'{thin_late}%', '03_groups.csv', 'typical (thin)')} of them late. Offer a flexible ticket.")]):
     y = 1.75 + i * 1.7
@@ -382,8 +384,8 @@ say9 = (f"In October to December we would have warned <b>{src(9, f'{int(first.fl
 s = new_slide(9, "Prediction 1: warn 2 flights in 10 and reach twice as many late ones as luck")
 big_stat(s, f'{src(9, f"{first.recall:.0%}", "07_value_first.csv", "recall")} vs {src(9, f"{first.random_recall:.0%}", "07_value_first.csv", "random_recall")}',
          "of the late or cancelled flights reached, against picking at random", BLUE, say9, say_h=2.0)
-for i, (fill, tcolor, head, body) in enumerate([("CDE2FB", INK, "Learn", "Jan-Jun"), ("9EC5F4", INK, "Tune", "Jul-Sep"), (BLUE, "FFFFFF", "Test, never seen", "Oct-Dec")]):
-    add_card(s, MX + i * 1.53, 6.0, 1.45, 0.82, [{"text": head, "size": 14, "bold": True, "color": tcolor, "align": PP_ALIGN.CENTER}, {"text": body, "size": 14, "color": tcolor, "align": PP_ALIGN.CENTER}], f"Time split {i + 1}", fill=fill, text_margin=0.06, anchor=MSO_ANCHOR.MIDDLE)
+for i, (fill, tcolor, head, body) in enumerate([("9EC5F4", INK, "Learn and tune", "Jan-Sep"), (BLUE, "FFFFFF", "Test, kept aside", "Oct-Dec")]):
+    add_card(s, MX + i * 2.3, 6.0, 2.2, 0.82, [{"text": head, "size": 14, "bold": True, "color": tcolor, "align": PP_ALIGN.CENTER}, {"text": body, "size": 14, "color": tcolor, "align": PP_ALIGN.CENTER}], f"Time split {i + 1}", fill=fill, text_margin=0.06, anchor=MSO_ANCHOR.MIDDLE)
 add_picture_fit(s, draw_gains(), 5.45, 1.65, 7.3, 5.2, "Share of late flights reached by the warning list, the simple rule and random picking")
 notes(s, 9, say9)
 

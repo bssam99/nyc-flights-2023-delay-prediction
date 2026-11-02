@@ -130,3 +130,61 @@ def test_task8_deck():
     assert all((common.REPORTS / f).exists() for f in sm["file"].unique())
     visible = " ".join(sh.text_frame.text for slide in prs.slides for sh in slide.shapes if sh.has_text_frame)
     assert not [w for w in BANNED if w.lower() in visible.lower()]
+    assert "never seen" not in visible.lower() and "safe default" not in visible.lower()
+    assert "makes its next flight" not in visible.lower() and "delays its next flight" not in visible.lower()
+
+
+def test_no_feature_reveals_a_cancelled_flight():
+    f = pd.read_parquet(common.PROC / "features.parquet")
+    cancelled = f["dep_delay"].isna()
+    for c in _csv("05_feature_table.csv")["feature"]:
+        col = f[c]
+        groups = [col.isna()] + ([col == v for v in col.dropna().unique()] if col.nunique() <= 5 else [])
+        for mask in groups:
+            if mask.sum() >= 500:
+                assert cancelled[mask].mean() < 0.9, f"{c}: a group of {int(mask.sum())} flights is almost all cancelled"
+
+
+def test_task2_second_prediction_records_the_probe_with_and_without_month():
+    s = _csv("02_second_prediction.csv").iloc[0]
+    assert {"probe_gain", "probe_gain_with_month"} <= set(s.index)
+    assert (s["probe_gain"] >= 0.03) == (s["choice"] == "minutes_late")
+
+
+def test_task2_domino_gap_is_checked_within_the_same_day():
+    d = _csv("02_domino_adjusted.csv").iloc[0]
+    assert 0 < d["same_day_gap_points"] < d["raw_gap_points"] and d["strata"] > 1000
+    f = _csv("02_findings.csv")
+    assert "same day" in f.loc[1, "check_result"].lower()
+
+
+def test_task7_card1_can_be_used_as_described():
+    v = _csv("07_value_first.csv").iloc[0]
+    assert v["recall_ranked_per_day"] > v["random_recall"]
+    text = " ".join(_csv("07_cards.csv")["text"]).lower()
+    assert "tomorrow" not in text and "warn only if" not in text
+
+
+def test_task3_steady_routes_are_not_oversold():
+    assert not _csv("03_groups.csv")["action"].str.contains("safe default", case=False).any()
+
+
+def test_readme_discloses_that_the_test_months_overall_rates_were_seen_in_design():
+    readme = (common.ROOT / "README.md").read_text(encoding="utf-8")
+    assert "D-004" in readme and "never seen" not in readme.lower()
+
+
+def test_plane_columns_do_not_reveal_a_missing_tail_number():
+    """Every flight without a tail number is a cancelled flight. Among cancelled flights, the plane columns must not
+    tell the two kinds apart (empty plane details would leak 'cancelled'). Old broken columns scored AUC 0.99, fixed 0.67."""
+    from sklearn.ensemble import HistGradientBoostingClassifier
+    from sklearn.metrics import roc_auc_score
+    f = pd.read_parquet(common.PROC / "features.parquet")
+    flights = pd.read_parquet(common.PROC / "flights_clean.parquet", columns=["row_id", "no_tailnum"])
+    cancelled = f.merge(flights, on="row_id").query("dep_delay != dep_delay")
+    columns = [c for c in ["seats", "plane_age", "plane_known"] if c in cancelled.columns]
+    order = cancelled.sample(frac=1.0, random_state=common.SEED)
+    half = len(order) // 2
+    model = HistGradientBoostingClassifier(random_state=common.SEED).fit(order[columns].iloc[:half], order["no_tailnum"].iloc[:half])
+    auc = roc_auc_score(order["no_tailnum"].iloc[half:], model.predict_proba(order[columns].iloc[half:])[:, 1])
+    assert auc < 0.8, f"the plane columns reveal a missing tail number (AUC {auc:.2f})"

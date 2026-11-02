@@ -6,13 +6,13 @@ It cleans the 2023 flights data, finds what drives delays, groups destination ai
 
 ## What we found
 
-| | Result on October to December (months never used for training or tuning) |
+| | Result on October to December (kept aside: no model is trained or tuned on them; we only looked at their overall rates when designing the project, see D-004 and D-025) |
 |---|---|
 | **Prediction 1: will the flight be late or cancelled?** | Warning the riskiest 2 flights in 10 reaches **40%** of the late or cancelled flights; picking at random reaches 20%. 28 warnings in 100 are right (14 flights in 100 are late). |
 | **Prediction 2: how many minutes late?** | A **modest** gain: the average error is 13.12 minutes against 13.27 for a simple guess. Ranking works better: among the 5% of flights with the highest predicted delay, 21% leave 45+ minutes late, against 6% overall (3.4 times more). |
-| **Weak spots** | Risk scores run too high in calm months (21% predicted, 14% real). Morning flights are reached only 6% of the time (evening: 71%). One linear model did not beat the simple guess on the test months and is reported, not used. |
+| **Weak spots** | Risk scores run too high in calm months (22% predicted, 14% real). Morning flights are reached only 7% of the time (evening: 70%). One linear model did not beat the simple guess on the test months and is reported, not used. |
 
-The five best findings (notebook 02): delays build up through the day (13% late in the morning, 40% in the evening); a late plane makes its next flight late (61% against 25%), which matters more than the weather; airlines differ a lot (35% against 18%); cancellations come in waves on a few days; and the weather at the airports only partly explains them.
+The five best findings (notebook 02): delays build up through the day (13% late in the morning, 40% in the evening); when a plane's earlier flight ran late, its next flight is much more likely to be late (61% against 25%; 26 points of that gap remain within the same day, airport and part of the day), a bigger jump in risk than bad weather brings, though we show a link and not a cause; airlines differ a lot (35% against 18%); cancellations come in waves on a few days; and the weather at the airports only partly explains them.
 
 Two numbers on the decision cards are **business assumptions, not data**: the agency can warn about 2 flights in 10 and check the connections of 1 in 20. They must be confirmed with the agency. The data has no prices, so no money figure is shown.
 
@@ -40,7 +40,7 @@ Cite: C. Ismay, S. P. Couch, H. Wickham, "nycflights23" (2025).
 ```bash
 pip install -r requirements.txt
 python tools/run_notebooks.py          # runs the 8 notebooks in order, from a fresh kernel each (about 5 minutes)
-python -m pytest tests -q              # 30 tests
+python -m pytest tests -q              # 37 tests
 python slides/build_deck.py            # rebuilds deck.pptx; the PDF is exported from it with Microsoft PowerPoint (Windows)
 ```
 
@@ -48,10 +48,17 @@ Each notebook also runs on its own with Kernel > Restart and Run All, after the 
 
 ## How we test honestly
 
-- **Split by time:** models learn from January to June, are compared and tuned on July to September, then retrained on January to September. October to December is opened **once, at the very end**, in a cell marked `# ---- FINAL TEST (run once) ----`. A test checks that no cell before the marker touches those months.
-- **Prediction time:** every column must be known **2 hours before** the scheduled departure. The actual departure and arrival times are never used (leakage), and the weather and the earlier flight of the same plane are only used if they were known by then. Unit tests pin this rule.
+- **Split by time:** models learn from January to June, are compared and tuned on July to September, then retrained on January to September. October to December is opened **once, at the very end**, in a cell marked `# ---- FINAL TEST (run once) ----`. A test checks that no cell before the marker touches those months. We did look at the overall late and cancelled rates of those months while designing the project (for example to choose the second prediction and the capacity rule): see D-004, D-005 and D-025 in the second brain.
+- **Prediction time:** every column must be known **2 hours before** the scheduled departure. The actual departure and arrival times are never used (leakage), and the weather and the earlier flight of the same plane are only used if they were known by then. Unit tests pin this rule. An independent review found one more leak: every flight with no tail number is a cancelled flight in this data, so an empty plane would have revealed the answer. Those flights now get a randomly drawn real plane, and a test guards it (D-026).
 - **Dumb answers:** every model is compared with a dumb answer ("nobody is late", or "every flight leaves at the usual delay") and a simple hour-of-day rule.
 - **Cut-offs by capacity:** "warn the riskiest 2 flights in 10", never a fixed probability, because the risk scores run too high in calm months.
+
+## Known limits
+
+- **One year of data**, so seasons cannot be learned, and the October-December months were much calmer than January-September (14% late or cancelled against 26%). Risk scores run too high there; we trust the ranking, not the percentages.
+- **Prediction 2 helps little on average** (1.1% closer than a simple guess on the test months); it is useful for ranking flights. One linear model did not beat the simple guess there and is reported, not used. Its choice as second prediction was a close call (D-027).
+- **Weather timestamps:** we use the reading stamped 2 hours before the scheduled hour. If readings are stamped at the end of their hour, that reading can be up to about 50 minutes newer than the decision time; a 3-hour lag would remove the doubt. The data does not say which convention applies (open question).
+- **Two capacities are assumptions** to confirm with the agency (warn 2 flights in 10, check 1 in 20), and the data has no prices, so no money figure is shown.
 
 ## How AI tools were used, and what was checked by hand
 
@@ -59,7 +66,7 @@ Each notebook also runs on its own with Kernel > Restart and Run All, after the 
 
 **What the owner checked.** The owner's own review of the analysis, the numbers and the code is **in progress**, using `second-brain/review-checklist.md`. This section will list exactly the checks the owner ticked, and nothing more.
 
-**What AI checked.** All tests pass, two full runs of the first-prediction notebook gave identical scores, and the numbers in the notebooks were compared with the report files. This is not a substitute for the owner's review.
+**What AI checked.** All tests pass, two full runs of the first-prediction notebook gave identical scores, and the numbers in the notebooks were compared with the report files. A separate AI session then reviewed the whole project independently, without relying on these notes. It found real problems (a leak through missing tail numbers, an undisclosed change to the second-prediction probe, overstated wording about the test months and about cause and effect, and a card that could not be used as described). They were fixed or disclosed, each fix guarded by a test that failed first (D-025 to D-029). None of this is a substitute for the owner's review.
 
 ## Second brain
 

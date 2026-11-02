@@ -1,2 +1,2 @@
-share_flagged,flagged,hits,precision,recall,random_recall,lift,risk_threshold,base_rate
-0.2,20894,5944,0.2845,0.4048,0.2,2.024,0.305,0.1406
+share_flagged,flagged,hits,precision,recall,random_recall,lift,risk_threshold,base_rate,recall_ranked_per_day
+0.2,20894,5937,0.2841,0.4043,0.2,2.021,0.305,0.1406,0.3936

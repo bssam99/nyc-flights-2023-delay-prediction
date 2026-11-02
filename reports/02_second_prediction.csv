@@ -1,2 +1,2 @@
-choice,target,metric,dumb_answer,reason
-minutes_late,"dep_delay in minutes, for flights that left",average error in minutes (MAE),always predict the usual delay of the training months (-2 minutes),"On the validation months a schedule-only model is wrong by 25.2 min on average against 26.1 for the dumb answer, 3.4% lower (the rule asks for at least 3%). Use: tell clients to expect a long delay and check their connections."
+choice,target,metric,dumb_answer,reason,probe_gain,probe_gain_with_month
+minutes_late,"dep_delay in minutes, for flights that left",average error in minutes (MAE),always predict the usual delay of the training months (-2 minutes),"On the validation months a schedule-only model is wrong by 25.2 min on average against 26.1 for the dumb answer, 3.4% lower (the rule asks for at least 3%). Use: tell clients to expect a long delay and check their connections.",0.0343,0.0202

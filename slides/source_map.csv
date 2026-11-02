@@ -10,6 +10,8 @@ slide,text,file,column
 4,40%,02_findings.csv,number (row 1)
 5,61%,02_findings.csv,number (row 2)
 5,25%,02_findings.csv,number (row 2)
+5,37,02_domino_adjusted.csv,raw_gap_points
+5,26,02_domino_adjusted.csv,same_day_gap_points
 5,36,02_findings.csv,number (row 4)
 5,18,02_findings.csv,number (row 4)
 6,35%,02_findings.csv,number (row 3)
@@ -23,7 +25,7 @@ slide,text,file,column
 8,39%,04_metrics_by_month.csv,late_or_cancelled_rate (July)
 8,12%,04_metrics_by_month.csv,late_or_cancelled_rate (November)
 9,"20,894",07_value_first.csv,flagged
-9,"5,944",07_value_first.csv,hits
+9,"5,937",07_value_first.csv,hits
 9,"2,937",07_value_first.csv,"hits, recall, random_recall"
 9,28,07_value_first.csv,precision
 9,14,07_value_first.csv,base_rate
@@ -36,11 +38,11 @@ slide,text,file,column
 11,2 in 10,07_value_first.csv,share_flagged
 11,"20,894",07_value_first.csv,flagged
 11,32%,07_weekly_scores.csv,value (median of full weeks x 0.8)
-11,38%,07_weekly_scores.csv,value (min)
+11,36%,07_weekly_scores.csv,value (min)
 11,46%,07_weekly_scores.csv,value (max)
 11,1 in 20,07_value_second.csv,flagged
 11,"5,212",07_value_second.csv,flagged
-12,21%,06a_calibration.csv,"mean_predicted, flights (weighted)"
+12,22%,06a_calibration.csv,"mean_predicted, flights (weighted)"
 12,14%,07_value_first.csv,base_rate
-12,6%,06a_group_errors.csv,"value (hour_band recall, morning)"
-12,71%,06a_group_errors.csv,"value (hour_band recall, evening)"
+12,7%,06a_group_errors.csv,"value (hour_band recall, morning)"
+12,70%,06a_group_errors.csv,"value (hour_band recall, evening)"
