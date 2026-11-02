@@ -1,0 +1,2 @@
+share_flagged,flagged,hits,precision,recall,random_recall,lift,risk_threshold,base_rate
+0.2,20894,5944,0.2845,0.4048,0.2,2.024,0.305,0.1406

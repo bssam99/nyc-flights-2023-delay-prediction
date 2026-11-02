@@ -97,3 +97,16 @@ def test_task6b_second_prediction():
     p = pd.read_parquet(common.PROC / "predictions_test_second.parquet")
     assert p["row_id"].is_unique and len(p) > 90_000
 
+
+def test_task7_cards():
+    c = _csv("07_cards.csv")
+    for card in ["first", "second"]:
+        x = c[c["card"] == card]
+        assert x["line_no"].tolist() == list(range(1, 12)) and x["text"].str.len().gt(15).all()
+    assert not c["text"].str.contains(r"\{|\}|nan", case=False, regex=True).any()
+    v1 = _csv("07_value_first.csv").iloc[0]
+    assert v1["recall"] > v1["random_recall"] and v1["lift"] > 1
+    v2 = _csv("07_value_second.csv").iloc[0]
+    assert v2["mae_model"] < v2["mae_dumb"] and v2["gain_minutes"] > 0
+    w = _csv("07_weekly_scores.csv")
+    assert w.groupby("prediction")["week_start"].nunique().min() >= 12
