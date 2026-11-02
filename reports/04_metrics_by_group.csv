@@ -1,0 +1,22 @@
+dimension,level,flights,on_time_rate,avg_dep_delay,median_dep_delay,cancellation_rate,share_over_60,late_or_cancelled_rate,level_name
+carrier,9E,54141,0.8443,7.4437,-4.0,0.0325,0.0582,0.1831,Endeavor Air
+carrier,AA,40525,0.8226,14.152,-3.0,0.0144,0.0766,0.1893,American Airlines
+carrier,AS,7843,0.8041,12.0102,-3.0,0.0088,0.0706,0.203,Alaska Airlines
+carrier,B6,66169,0.684,23.7778,0.0,0.0234,0.1418,0.332,JetBlue Airways
+carrier,DL,61562,0.7926,15.1025,-1.0,0.0154,0.0793,0.2196,Delta Air Lines
+carrier,F9,1286,0.5739,35.7414,8.0,0.0529,0.1864,0.4565,Frontier Airlines
+carrier,G4,671,0.904,3.9775,-5.0,0.006,0.0375,0.1013,Allegiant Air
+carrier,HA,366,0.7253,22.8544,3.0,0.0055,0.1044,0.2787,Hawaiian Airlines
+carrier,MQ,357,0.7514,10.4576,0.0,0.0084,0.0565,0.2549,Envoy Air
+carrier,NK,15189,0.7472,18.1505,-2.0,0.0238,0.1093,0.2707,Spirit Air Lines
+carrier,OO,6432,0.7918,19.7726,-2.0,0.0339,0.1001,0.2351,SkyWest Airlines
+carrier,UA,79641,0.7463,17.5862,-1.0,0.023,0.1001,0.2709,United Air Lines
+carrier,WN,12385,0.7274,16.1447,3.0,0.0226,0.0686,0.2891,Southwest Airlines
+carrier,YX,88785,0.8786,4.2115,-5.0,0.0345,0.0457,0.1517,Republic Airline
+origin,EWR,138578,0.7726,15.4041,-2.0,0.0262,0.0887,0.2477,EWR
+origin,JFK,133048,0.7748,15.9042,-2.0,0.0214,0.0932,0.2417,JFK
+origin,LGA,163726,0.818,10.8242,-4.0,0.026,0.0729,0.2032,LGA
+dest_group,Afternoon build-up routes,237094,0.7596,17.3627,-1.0,0.0192,0.0965,0.255,Afternoon build-up routes
+dest_group,Rare destinations (too few flights to judge),445,0.7805,13.9253,-2.0,0.0067,0.0724,0.2247,Rare destinations (too few flights to judge)
+dest_group,Steady regional routes,195819,0.8307,9.2762,-4.0,0.0313,0.0675,0.1952,Steady regional routes
+dest_group,Thin routes with long delays,1994,0.5244,37.2182,12.0,0.0256,0.2301,0.489,Thin routes with long delays

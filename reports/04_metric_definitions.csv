@@ -1,0 +1,6 @@
+metric,formula,why,up_is
+on_time_rate,flights that left at most 15 minutes late / flights that left,Share of clients whose flight left on time. A flight that leaves early counts as on time.,good
+avg_and_median_dep_delay,"mean and median of dep_delay (minutes, negative = early) over flights that left","The typical wait: the median shows the usual flight, the average shows the pain of the few very late ones.",bad
+cancellation_rate,scheduled flights with no departure time / scheduled flights,A cancelled flight is the worst outcome for a client: it needs rebooking.,bad
+share_over_60,flights that left more than 60 minutes late / flights that left,Long delays break connections and trigger complaints.,bad
+late_or_cancelled_rate,(flights that left more than 15 minutes late + cancelled flights) / scheduled flights,The one number the agency wants to keep low; it is what the first prediction predicts.,bad

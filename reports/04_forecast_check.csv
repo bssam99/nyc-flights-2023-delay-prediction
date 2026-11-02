@@ -1,0 +1,4 @@
+month,actual,forecast,method,error
+10,0.1317,0.2913,average of the last 3 known months,0.1596
+11,0.1209,0.2913,average of the last 3 known months,0.1704
+12,0.1706,0.2913,average of the last 3 known months,0.1207

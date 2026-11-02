@@ -1,0 +1,49 @@
+group_name,month,flights,on_time_rate,avg_dep_delay,median_dep_delay,cancellation_rate,share_over_60,late_or_cancelled_rate
+Afternoon build-up routes,1,20285.0,0.7583,16.2593,-1.0,0.0111,0.0932,0.2501
+Afternoon build-up routes,2,19073.0,0.7746,13.5821,-1.0,0.0116,0.0769,0.2344
+Afternoon build-up routes,3,21706.0,0.7407,16.825,-1.0,0.0126,0.0998,0.2686
+Afternoon build-up routes,4,20432.0,0.7228,21.7455,0.0,0.0301,0.1159,0.299
+Afternoon build-up routes,5,20659.0,0.7925,12.1137,-1.0,0.0051,0.0695,0.2115
+Afternoon build-up routes,6,18940.0,0.6658,30.6117,1.0,0.0486,0.1597,0.3666
+Afternoon build-up routes,7,19265.0,0.623,36.0257,4.0,0.0621,0.1855,0.4157
+Afternoon build-up routes,8,19373.0,0.7552,17.6133,-1.0,0.0167,0.0997,0.2574
+Afternoon build-up routes,9,18734.0,0.7575,20.2091,-1.0,0.0311,0.1085,0.266
+Afternoon build-up routes,10,19688.0,0.8455,7.9683,-3.0,0.0021,0.0516,0.1562
+Afternoon build-up routes,11,19353.0,0.8554,7.343,-3.0,0.0009,0.0471,0.1454
+Afternoon build-up routes,12,19586.0,0.808,10.8104,-2.0,0.0018,0.0628,0.1935
+Rare destinations (too few flights to judge),1,34.0,0.8182,14.9394,-4.0,0.0294,0.0606,0.2059
+Rare destinations (too few flights to judge),2,43.0,0.6744,17.6977,0.0,0.0,0.093,0.3256
+Rare destinations (too few flights to judge),3,49.0,0.7917,6.1875,-2.5,0.0204,0.0417,0.2245
+Rare destinations (too few flights to judge),4,37.0,0.9189,-0.4595,-5.0,0.0,0.0,0.0811
+Rare destinations (too few flights to judge),5,8.0,1.0,-5.25,-4.0,0.0,0.0,0.0
+Rare destinations (too few flights to judge),6,42.0,0.4762,62.6429,16.0,0.0,0.2381,0.5238
+Rare destinations (too few flights to judge),7,45.0,0.4773,34.4545,16.5,0.0222,0.1818,0.5333
+Rare destinations (too few flights to judge),8,44.0,0.8182,9.5682,0.0,0.0,0.0682,0.1818
+Rare destinations (too few flights to judge),9,24.0,0.9583,-3.7917,-5.5,0.0,0.0,0.0417
+Rare destinations (too few flights to judge),10,18.0,0.8333,3.5,-3.5,0.0,0.0,0.1667
+Rare destinations (too few flights to judge),11,39.0,0.9487,-3.6154,-5.0,0.0,0.0,0.0513
+Rare destinations (too few flights to judge),12,62.0,0.9194,4.2581,-3.5,0.0,0.0484,0.0806
+Steady regional routes,1,15574.0,0.7989,11.0193,-4.0,0.0168,0.0769,0.2145
+Steady regional routes,2,15520.0,0.8303,7.6838,-4.0,0.0209,0.0638,0.187
+Steady regional routes,3,17598.0,0.8317,8.1724,-4.0,0.0169,0.0619,0.1824
+Steady regional routes,4,16829.0,0.8082,12.5694,-4.0,0.0243,0.0834,0.2115
+Steady regional routes,5,17857.0,0.8748,3.923,-4.0,0.0024,0.0378,0.1273
+Steady regional routes,6,16743.0,0.7645,16.6726,-3.0,0.0743,0.1047,0.2923
+Steady regional routes,7,16684.0,0.7267,23.1698,-2.0,0.115,0.1327,0.3569
+Steady regional routes,8,17127.0,0.8369,8.4817,-4.0,0.0175,0.0631,0.1777
+Steady regional routes,9,16576.0,0.8048,13.6786,-4.0,0.0723,0.0873,0.2534
+Steady regional routes,10,16727.0,0.899,2.0215,-5.0,0.0004,0.0346,0.1013
+Steady regional routes,11,15011.0,0.9122,0.4736,-5.0,0.0003,0.0251,0.088
+Steady regional routes,12,13573.0,0.8723,4.606,-5.0,0.0088,0.045,0.1353
+Thin routes with long delays,1,127.0,0.6667,22.7937,0.0,0.0079,0.1429,0.3386
+Thin routes with long delays,2,125.0,0.608,26.536,6.0,0.0,0.144,0.392
+Thin routes with long delays,3,161.0,0.5312,31.6,12.0,0.0062,0.2,0.472
+Thin routes with long delays,4,178.0,0.4824,41.8941,17.5,0.0449,0.2647,0.5393
+Thin routes with long delays,5,186.0,0.5699,24.7204,9.0,0.0,0.1344,0.4301
+Thin routes with long delays,6,196.0,0.4521,55.2926,20.5,0.0408,0.3138,0.5663
+Thin routes with long delays,7,217.0,0.2857,67.5291,44.0,0.129,0.4074,0.7512
+Thin routes with long delays,8,221.0,0.4541,50.078,22.5,0.0136,0.3349,0.552
+Thin routes with long delays,9,171.0,0.4734,39.2189,18.0,0.0117,0.2663,0.5322
+Thin routes with long delays,10,153.0,0.7124,16.4052,0.0,0.0,0.1046,0.2876
+Thin routes with long delays,11,118.0,0.6695,24.8898,3.5,0.0,0.1525,0.3305
+Thin routes with long delays,12,141.0,0.5674,22.695,8.0,0.0,0.1489,0.4326

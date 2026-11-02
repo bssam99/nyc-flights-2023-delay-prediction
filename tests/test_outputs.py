@@ -42,3 +42,15 @@ def test_task3_groups():
     assert r[["group_name", "typical", "action"]].notna().all().all()
     assert r["size"].sum() == 118
     assert list(_csv("03_k_selection.csv")["k"]) == list(range(2, 11))
+
+
+def test_task4_metrics():
+    d = _csv("04_metric_definitions.csv")
+    assert 4 <= len(d) <= 6 and d[["formula", "why", "up_is"]].notna().all().all()
+    m = _csv("04_metrics_by_month.csv").set_index("month")
+    assert len(m) == 12 and m["on_time_rate"].between(0, 1).all()
+    assert abs(m.loc[7, "late_or_cancelled_rate"] - 0.391) < 0.001
+    assert abs(m.loc[7, "cancellation_rate"] - 0.087) < 0.001
+    assert abs(m.loc[10, "late_or_cancelled_rate"] - 0.132) < 0.001
+    g = _csv("04_metrics_by_group.csv")
+    assert {"carrier", "origin", "dest_group"} <= set(g["dimension"])
