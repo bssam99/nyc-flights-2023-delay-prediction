@@ -46,15 +46,20 @@ MARKER = "# ---- FINAL TEST (run once) ----"
 REACHES_TEST_MONTHS = [re.compile(p) for p in [
     r"""['"]test['"]""",                                                     # the part is named
     r"""~[^\n]*\.isin\(\s*\[[^\]]*['"](fit|valid)['"]""",                   # everything that is not fit / valid
-    r"""!=\s*['"](fit|valid)['"]""",                                         # part != "fit" or "valid" includes the test months
+    r"""(!=|\.ne\()\s*['"](fit|valid)['"]""",                                 # part != "fit" or "valid" includes the test months
     r"""split_part\(""",                                                     # recomputing the split
-    r"""month['"]?\]?\s*(>=?\s*(9|10|11|12)\b|==\s*1[0-2]\b)""",             # October-December picked by month number
-    r"""month['"]?\]?\.isin\(\s*\[\s*1[0-2]\b""",
+    r"""month['"]?\]?\s*(>=?\s*(7|8|9|1[0-2])\b|==\s*(9|1[0-2])\b)""",       # the months from July on picked by number (October-December are the test months)
+    r"""month['"]?\]?\.isin\(\s*(\[\s*(9|1[0-2])\b|range\(\s*(7|8|9|1[0-2])\b)""",
+    r"""month['"]?\]?\.between\([^)]*\b1[0-2]\b""",
+    r"""\b(7|8|9|1[0-2])\s*<=?\s*[^\n]{0,30}month""",                           # 10 <= df["month"]
+    r"""2023-1[0-2]""",                                                      # a date in October-December
+    r"""quarter['"]?\)?\s*==\s*4""",
 ]]
 
 
 def _cells_using_test_part_before_marker(nb):
-    """Indices of code cells that mention the 'test' part before the cell holding the marker (None if no marker)."""
+    """Indices of code cells that name or select the held-out months in one of the usual ways before the cell holding the marker (None if no marker).
+    A heuristic, not a proof: it cannot see every way of writing the same selection."""
     cells = [c.source for c in nb.cells if c.cell_type == "code"]
     first = next((i for i, s in enumerate(cells) if MARKER in s), None)
     if first is None:
@@ -74,7 +79,11 @@ def test_guard_flags_a_notebook_that_touches_the_test_part_early():
     assert _cells_using_test_part_before_marker(_nb('x = df[df["month"] >= 10]', MARKER)) == [0]
     assert _cells_using_test_part_before_marker(_nb('x = df[df["month"].isin([10, 11, 12])]', MARKER)) == [0]
     assert _cells_using_test_part_before_marker(_nb('x = common.split_part(df["month"])', MARKER)) == [0]
+    for sneaky in ['x = df[df["sched_dep_dt"] >= "2023-10-01"]', 'x = df[df["month"].between(10, 12)]', 'x = df[df["part"].ne("valid")]', 'x = df[10 <= df["month"]]',
+                   'x = df[df["month"] > 8]', 'x = df[df["month"].isin(range(10, 13))]', 'x = df[df["sched_dep_dt"].dt.quarter == 4]', 'x = df[df["month"] >= 7]']:
+        assert _cells_using_test_part_before_marker(_nb(sneaky, MARKER)) == [0], sneaky
     # and the ordinary training and validation selections are fine
+    assert _cells_using_test_part_before_marker(_nb('x = df[df["month"] <= 6]; y = df[df["month"].between(1, 9)]', MARKER)) == []
     assert _cells_using_test_part_before_marker(_nb('x = df[df["part"] == "fit"]; y = df[df["part"].isin(["fit", "valid"])]', MARKER)) == []
     assert _cells_using_test_part_before_marker(_nb("x = 1", MARKER, "y = df[df.part == 'test']")) == []
     assert _cells_using_test_part_before_marker(_nb("x = 1")) is None

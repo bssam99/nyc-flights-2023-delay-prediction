@@ -1,4 +1,6 @@
 import hashlib
+import subprocess
+import sys
 
 import numpy as np
 import pandas as pd
@@ -183,8 +185,12 @@ def test_task2_weather_finding_checks_the_comparison_its_title_makes():
     """The title says a late earlier flight raises the risk more than bad weather, so the check must be an interval for the
     difference between the two jumps (resampling whole days), not only for the weather jump."""
     f = _csv("02_findings.csv")
-    row = f[f["finding"].str.contains("bigger jump in risk than bad weather")].iloc[0]
+    row = f[f["finding"].str.contains("bigger jump in risk than everyday bad weather")].iloc[0]
     assert "difference between the two jumps" in row["check_result"] and "95% interval" in row["check_result"]
+    k = _csv("02_key_numbers.csv").astype(str).set_index("name")["value"]
+    point = int(re.search(r"jump is (\d+) points bigger", row["check_result"]).group(1))
+    assert abs(point - (int(k["plane_points"]) - int(k["weather_points"]))) <= 1       # the interval is for the two jumps quoted in the sentence
+    assert "stricter definitions the weather jump gets larger but covers very few flights" in row["why"]     # the answer depends on the definition
     airlines = f[f["finding"].str.contains("Airlines differ")].iloc[0]
     assert "picked from the same data" in airlines["check_result"]
 
@@ -207,9 +213,28 @@ def test_task7_card1_can_be_used_as_described():
     text = " ".join(cards["text"]).lower()
     assert "tomorrow" not in text and "warn only if" not in text and "day by day" not in text
     cut_off = cards.query("card == 'first' and line == 'Cut-off'")["text"].iloc[0]
-    assert f"{v['recall_live_rule']:.0%}" in cut_off and "previous 7 days" in cut_off and f"{v['recall_ranked_per_hour']:.0%}" in cut_off
+    assert "previous 7 days" in cut_off
+    assert f"warned {v['share_live_rule']:.0%} of the flights and reached {v['recall_live_rule']:.0%} of the late or cancelled ones, {v['precision_live_rule']:.0%} of the warnings being right" in cut_off
+    assert f"the reach would fall to {v['recall_ranked_per_hour']:.0%}" in cut_off and "scores of flights up to an hour ahead" in cut_off
+    assert f"which no live system can do, reaches {v['recall']:.0%}" in cut_off
     finding = cards.query("card == 'first' and line == 'Finding'")["text"].iloc[0]
     assert "flew earlier that day" not in finding and "left at least 2 hours" in finding
+
+
+def test_task7_live_rule_can_be_recomputed_from_the_saved_predictions():
+    v = _csv("07_value_first.csv").iloc[0]
+    pred = _parquet("predictions_test_late.parquet").merge(_parquet("flights_clean.parquet", columns=["row_id", "sched_dep_dt"]), on="row_id")
+    pred["day"] = pred["sched_dep_dt"].dt.date
+    days = sorted(pred["day"].unique())
+    assert (days[-1] - days[0]).days + 1 == len(days), "the 'previous 7 days' need every calendar day to be present"
+    cutoff = {d: pred.loc[pred["day"].isin(days[i - 7:i]), "risk"].quantile(0.8) for i, d in enumerate(days) if i >= 7}      # never the day itself
+    live = pred[pred["day"].isin(cutoff)]
+    warned = live["risk"].to_numpy() >= live["day"].map(cutoff).to_numpy().astype(float)
+    hits = warned & (live["y_true"].to_numpy() == 1)
+    assert round(warned.mean(), 4) == v["share_live_rule"]
+    assert round(hits.sum() / live["y_true"].sum(), 4) == v["recall_live_rule"]
+    assert round(hits.sum() / warned.sum(), 4) == v["precision_live_rule"]
+    assert v["late_total"] == pred["y_true"].sum() and round(v["hits"] / v["late_total"], 4) == v["recall"]
 
 
 def test_task3_steady_routes_are_not_oversold():
@@ -223,19 +248,39 @@ def test_readme_discloses_that_the_test_months_overall_rates_were_seen_in_design
     assert "D-004" in readme and "never seen" not in readme.lower()
 
 
-def test_plane_columns_do_not_reveal_a_cancelled_flight_within_one_airline():
-    """Nearly all no-tail flights are United's, and every one is cancelled. Planes drawn from other airlines' fleets would
-    still stand out among United's own flights, so the plane columns alone must not separate cancelled from normal United
-    flights (January-September). Drawing from all airlines gave AUC 0.90; a same-airline draw is near 0.5."""
+def _cancelled_within(carrier):
+    """One airline's January-September flights, with a 0/1 column 'cancelled' (the flight never left)."""
+    f = _parquet("features.parquet")
+    frame = f[(f["carrier"] == carrier) & (f["part"] != "test")].reset_index(drop=True)
+    return frame.assign(cancelled=frame["dep_delay"].isna().astype(int))
+
+
+def _cross_validated_auc(frame, columns):
     from sklearn.ensemble import HistGradientBoostingClassifier
     from sklearn.metrics import roc_auc_score
-    f = _parquet("features.parquet")
-    united = f.query("carrier == 'UA' and part != 'test'").sample(frac=1.0, random_state=common.SEED)
-    cancelled = united["dep_delay"].isna().astype(int)
-    half = len(united) // 2
-    model = HistGradientBoostingClassifier(random_state=common.SEED).fit(united[["seats", "plane_age"]].iloc[:half], cancelled.iloc[:half])
-    auc = roc_auc_score(cancelled.iloc[half:], model.predict_proba(united[["seats", "plane_age"]].iloc[half:])[:, 1])
-    assert auc < 0.7, f"the plane columns separate cancelled United flights from the rest (AUC {auc:.2f})"
+    from sklearn.model_selection import StratifiedKFold, cross_val_predict
+    y = frame["cancelled"].to_numpy()
+    risk = cross_val_predict(HistGradientBoostingClassifier(random_state=common.SEED), frame[columns], y,
+                             cv=StratifiedKFold(5, shuffle=True, random_state=common.SEED), method="predict_proba")[:, 1]
+    return roc_auc_score(y, risk)
+
+
+def test_plane_columns_add_nothing_beyond_the_route_for_cancelled_flights_within_an_airline():
+    """Every cancelled United and Frontier flight has no tail number, so a replacement plane that does not fit the route marks
+    it as cancelled. Distance is legitimate knowledge and already separates a little; the plane columns must add almost
+    nothing to it. (Planes drawn from the airline's whole fleet: United 0.56 -> 0.74; drawn within airline and destination: ~0.57.)"""
+    for carrier, allowed_gain in [("UA", 0.04), ("F9", 0.08)]:
+        c = _cancelled_within(carrier)
+        gain = _cross_validated_auc(c, ["distance", "seats", "plane_age"]) - _cross_validated_auc(c, ["distance"])
+        assert gain < allowed_gain, f"{carrier}: the plane columns add {gain:.3f} to the route when telling cancelled flights apart"
+
+
+def test_earlier_flight_columns_do_not_reveal_a_cancelled_flight_within_an_airline():
+    """A flight without a tail number has no earlier flight of its plane, so 'earlier flight known' was 0 for every cancelled
+    United flight (AUC 0.61 on its own, against 0.50 to 0.51 for airlines whose cancelled flights have planes)."""
+    for carrier in ["UA", "F9"]:
+        auc = _cross_validated_auc(_cancelled_within(carrier), ["prev_known", "prev_dep_delay"])
+        assert auc < 0.55, f"{carrier}: the earlier-flight columns alone tell cancelled flights apart (AUC {auc:.2f})"
 
 
 def test_parquet_helper_gives_a_clear_message_when_a_notebook_has_not_run(tmp_path, monkeypatch):
@@ -313,20 +358,21 @@ def test_owner_review_statement_says_which_version_was_checked():
     readme = (common.ROOT / "README.md").read_text(encoding="utf-8")
     flag = re.search(r"\*\*Re-check on the final version:\*\* (pending|done)", checklist)
     assert flag, "the checklist must carry a line '**Re-check on the final version:** pending' or 'done'"
-    count = sum(len(re.findall(r"^def test_", p.read_text(encoding="utf-8"), flags=re.M)) for p in (common.ROOT / "tests").glob("test_*.py"))
+    collected = subprocess.run([sys.executable, "-m", "pytest", "--collect-only", "-q", str(common.ROOT / "tests")], capture_output=True, text=True, cwd=common.ROOT).stdout
+    count = int(re.search(r"(\d+) tests? collected", collected).group(1))      # what pytest really collects, also parametrised tests and methods
     assert f"then `{count} passed`" in checklist and f"# {count} tests" in readme, f"quote {count} tests"
     from pptx import Presentation
     slide12 = " ".join(sh.text_frame.text for sh in Presentation(common.ROOT / "slides" / "deck.pptx").slides[11].shapes if sh.has_text_frame)
     if flag.group(1) == "pending":
         assert "earlier version" in readme and "not yet repeated" in readme
         assert "earlier version of the project" in slide12
-    else:
-        assert "earlier version of the project" not in slide12
+    else:      # the owner repeated the checks: the README (edited by hand) and the slide must no longer say otherwise
+        assert "not yet repeated" not in readme and "earlier version of the project" not in slide12
 
 
 def test_readme_names_the_python_version_the_pinned_packages_need():
     readme = (common.ROOT / "README.md").read_text(encoding="utf-8")
-    assert re.search(r"Python 3\.11 or newer", readme), "pandas 3 and numpy 2.4 need Python 3.11 or later; the README must say so"
+    assert "Python 3.11.8" in readme and re.search(r"3\.11 or 3\.12", readme), "name the tested version and the range the pinned packages allow"
 
 
 def test_readme_numbers_match_the_report_files():

@@ -1,5 +1,5 @@
 feature,what,why,known_in_advance,known_because
-hour,Scheduled departure hour (0-23),Delays build up through the day (finding 1).,yes,published schedule
+hour,Scheduled departure hour (0-23),The risk of delay climbs through the day (finding 1).,yes,published schedule
 weekday,Day of the week (0 = Monday),Some days are busier or more disrupted than others.,yes,published schedule
 distance,Distance of the flight in miles,Longer routes may behave differently (and a proxy for the route).,yes,published schedule
 carrier,Airline code,Airlines differ a lot in reliability (finding 3).,yes,published schedule

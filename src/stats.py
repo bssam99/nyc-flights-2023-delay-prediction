@@ -21,7 +21,11 @@ def day_bootstrap_cells(cells, statistic, draws: int = 1000, seed: int = 42):
     arrays = [np.asarray(c, dtype=float) for c in cells]
     if any(a.shape != arrays[0].shape for a in arrays) or arrays[0].ndim != 2 or arrays[0].shape[1] != 2:
         raise ValueError("every group needs counts of the same shape (days, 2): (events, flights) per day")
+    if any(a[:, 1].sum() == 0 for a in arrays):
+        raise ValueError("a group has no flights, so its rate is undefined")
     picks = np.random.default_rng(seed).integers(0, len(arrays[0]), size=(draws, len(arrays[0])))
+    if any((a[picks, 1].sum(axis=1) == 0).any() for a in arrays):
+        raise ValueError("a resample drew only days without flights for a group; the interval would be undefined")
     resampled = [a[picks, 0].sum(axis=1) / a[picks, 1].sum(axis=1) for a in arrays]
     point = statistic([a[:, 0].sum() / a[:, 1].sum() for a in arrays])
     low, high = np.percentile(statistic(resampled), [2.5, 97.5])

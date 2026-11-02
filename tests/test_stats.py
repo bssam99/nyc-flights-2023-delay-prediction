@@ -52,3 +52,9 @@ def test_bad_inputs_raise_clear_errors_instead_of_asserting():
         day_bootstrap(ok, ok[:4], lambda x, y: y - x)
     with pytest.raises(ValueError, match="same shape"):
         day_bootstrap_cells([ok, ok[:4]], lambda r: r[0])
+
+
+def test_day_bootstrap_cells_refuses_a_group_without_flights():
+    ok = np.column_stack([np.ones(5), np.full(5, 10.0)])
+    with pytest.raises(ValueError, match="no flights"):
+        day_bootstrap_cells([ok, np.zeros((5, 2))], lambda r: r[0] - r[1])

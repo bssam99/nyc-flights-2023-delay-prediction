@@ -26,11 +26,13 @@ slide,text,file,column
 8,39%,04_metrics_by_month.csv,late_or_cancelled_rate (July)
 8,12%,04_metrics_by_month.csv,late_or_cancelled_rate (November)
 9,"20,894",07_value_first.csv,flagged
-9,"5,947",07_value_first.csv,hits
+9,2 in 10,07_value_first.csv,share_flagged
+9,"5,929",07_value_first.csv,hits
 9,"2,937",07_value_first.csv,"hits, recall, random_recall"
 9,28,07_value_first.csv,precision
 9,14,07_value_first.csv,base_rate
 9,40%,07_value_first.csv,recall_live_rule
+9,2 flights in 10,07_value_first.csv,share_flagged
 9,2.0,07_value_first.csv,lift
 9,40%,07_value_first.csv,recall
 9,20%,07_value_first.csv,random_recall

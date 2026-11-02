@@ -72,7 +72,7 @@ dom_adj = csv("02_domino_adjusted.csv").iloc[0]
 thin_late = int(groups.loc[2, "late_pct"])
 july = months.set_index("month").loc[7]
 november = months.set_index("month").loc[11]
-late_total = round(first["hits"] / first["recall"])
+late_total = int(first["late_total"])
 random_hits = round(late_total * first["random_recall"])
 full_weeks = weekly[(weekly["prediction"] == "late_or_cancelled") & (weekly["n"] >= 5000)]
 predicted_avg = float((calibration["mean_predicted"] * calibration["flights"]).sum() / calibration["flights"].sum())
@@ -149,6 +149,7 @@ PLAIN = {
     "A4": "read how the models are kept from using future information",
     "A5": "confirmed the test months stay untouched until the end",
     "A6": "read the leak found by the independent review and how it was fixed",
+    "A7": "read the later leaks found by the independent reviews and how they were fixed",
     "B1": "went through the data-cleaning decisions", "B2": "went through the findings and their checks",
     "B3": "went through the destination groups", "B4": "recomputed a monthly number from the raw data",
     "B5": "went through each column built for the models", "B6": "went through the model results",
@@ -351,17 +352,18 @@ notes(s, 3, say3)
 
 # 4 hour
 say4 = "Flights scheduled in the morning are rarely late; in the evening far more of them are. <b>Clients with tight connections should fly in the morning.</b>"
-chart_slide(4, "Delays build up through the day",
+chart_slide(4, "The risk of delay climbs through the day",
             f'{src(4, f"{morning_pct}%", "02_findings.csv", "number (row 1)")} → {src(4, f"{evening_pct}%", "02_findings.csv", "number (row 1)")}',
             "late or cancelled: flights at 6-9 am against 7-10 pm", ORANGE, say4, prepared("02_hour.png"), "Late or cancelled share by scheduled departure hour")
 
 # 5 domino
 say5 = (f"When the same plane's earlier flight left more than 15 minutes late, <b>{src(5, f'{late_plane_pct}%', '02_findings.csv', 'number (row 2)')}</b> of its next flights are late or cancelled, "
         f"against <b>{src(5, f'{ok_plane_pct}%', '02_findings.csv', 'number (row 2)')}</b> otherwise. Part of that is a shared bad day: within the same day, airport and part of the day, the overall gap of "
-        f"{src(5, f'{dom_adj.raw_gap_points:.0f}', '02_domino_adjusted.csv', 'raw_gap_points')} points shrinks to {src(5, f'{dom_adj.same_day_gap_points:.0f}', '02_domino_adjusted.csv', 'same_day_gap_points')}. The agency can see the earlier flight two hours ahead.")
-chart_slide(5, "A late earlier flight is a strong warning sign, stronger than bad weather",
+        f"{src(5, f'{dom_adj.raw_gap_points:.0f}', '02_domino_adjusted.csv', 'raw_gap_points')} points shrinks to {src(5, f'{dom_adj.same_day_gap_points:.0f}', '02_domino_adjusted.csv', 'same_day_gap_points')}. The agency can see the earlier flight two hours ahead. "
+        "This is against everyday bad weather; the rarest severe storms can be worse.")
+chart_slide(5, "A late earlier flight is a strong warning sign, stronger than everyday bad weather",
             f'+{src(5, plane_points, "02_findings.csv", "number (row 4)")} vs +{src(5, weather_points, "02_findings.csv", "number (row 4)")}',
-            "points of extra risk, each measured with the other absent: a late earlier flight against bad weather", ORANGE, say5, prepared("02_weather.png"), "Risk after a late earlier flight and in bad weather")
+            "points of extra risk: a late earlier flight against everyday bad weather (rain, snow, low visibility, strong gusts)", ORANGE, say5, prepared("02_weather.png"), "Risk after a late earlier flight and in bad weather")
 
 # 6 airlines
 say6 = "Even when we compare flights from the same airport at the same time of day, the gap remains. <b>For a tight connection, prefer the steadier airlines.</b>"
@@ -391,11 +393,11 @@ chart_slide(8, "July was the worst month and autumn the calmest",
             "late or cancelled: July against November. These are the monthly numbers to follow.", ORANGE, say8, prepared("04_monthly_metrics.png"), "Four monthly measures of delays and cancellations")
 
 # 9 prediction 1
-say9 = (f"In October to December we would have warned <b>{src(9, f'{int(first.flagged):,}', '07_value_first.csv', 'flagged')}</b> flights (2 in 10) and reached <b>{src(9, f'{int(first.hits):,}', '07_value_first.csv', 'hits')}</b> "
+say9 = (f"In October to December we would have warned <b>{src(9, f'{int(first.flagged):,}', '07_value_first.csv', 'flagged')}</b> flights ({src(9, '2 in 10', '07_value_first.csv', 'share_flagged')}) and reached <b>{src(9, f'{int(first.hits):,}', '07_value_first.csv', 'hits')}</b> "
         f"late or cancelled ones, against about <b>{src(9, f'{random_hits:,}', '07_value_first.csv', 'hits, recall, random_recall')}</b> by luck. "
         f"{src(9, f'{first.precision * 100:.0f}', '07_value_first.csv', 'precision')} warnings in 100 were right; {src(9, f'{first.base_rate * 100:.0f}', '07_value_first.csv', 'base_rate')} flights in 100 were late. "
         f"Run live, with the cut-off set from the previous 7 days, it reaches <b>{src(9, f'{first.recall_live_rule:.0%}', '07_value_first.csv', 'recall_live_rule')}</b>.")
-s = new_slide(9, f"Prediction 1: warn 2 flights in 10 and reach {src(9, f'{first.lift:.1f}', '07_value_first.csv', 'lift')} times as many late ones as luck")
+s = new_slide(9, f"Prediction 1: warn {src(9, '2 flights in 10', '07_value_first.csv', 'share_flagged')} and reach {src(9, f'{first.lift:.1f}', '07_value_first.csv', 'lift')} times as many late ones as luck")
 big_stat(s, f'{src(9, f"{first.recall:.0%}", "07_value_first.csv", "recall")} vs {src(9, f"{first.random_recall:.0%}", "07_value_first.csv", "random_recall")}',
          "of the late or cancelled flights reached, against picking at random", BLUE, say9, say_h=2.0)
 for i, (fill, tcolor, head, body) in enumerate([("9EC5F4", INK, "Learn and tune", "Jan-Sep"), (BLUE, "FFFFFF", "Test, kept aside", "Oct-Dec")]):
@@ -414,7 +416,7 @@ chart_slide(10, "Prediction 2: how late will a flight be? A modest gain, honestl
 # 11 decision cards
 s = new_slide(11, "Two decision cards: what to do, for how many flights, and when to re-check")
 c1 = [{"text": "Card 1 · warn the client", "size": 19, "bold": True, "after": 4},
-      {"text": f"<b>Who:</b> the {src(11, '2 in 10', '07_value_first.csv', 'share_flagged')} riskiest flights, {src(11, f'{int(first.flagged):,}', '07_value_first.csv', 'flagged')} in 3 months.", "size": 15, "after": 3},
+      {"text": f"<b>Who:</b> the {src(11, '2 in 10', '07_value_first.csv', 'share_flagged')} riskiest flights ({src(11, f'{int(first.flagged):,}', '07_value_first.csv', 'flagged')} in the 3 months, ranked together).", "size": 15, "after": 3},
       {"text": "<b>Do:</b> warn the client and check the connection. A person confirms first.", "size": 15, "after": 3},
       {"text": f"<b>Re-check</b> if the weekly reach falls below <b>{src(11, f'{trigger_line:.0%}', '07_value_first.csv', 'recheck_line')}</b> two weeks in a row. It stayed between {src(11, f'{full_weeks.value.min():.0%}', '07_weekly_scores.csv', 'value (min)')} and {src(11, f'{full_weeks.value.max():.0%}', '07_weekly_scores.csv', 'value (max)')}.", "size": 15}]
 c2 = [{"text": "Card 2 · check the connection", "size": 19, "bold": True, "after": 4},
