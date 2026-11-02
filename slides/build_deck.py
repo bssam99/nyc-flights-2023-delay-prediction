@@ -81,7 +81,7 @@ random_hits = round(late_total * first["random_recall"])
 full_weeks = weekly[(weekly["prediction"] == "late_or_cancelled") & (weekly["n"] >= 5000)]
 predicted_avg = float((calibration["mean_predicted"] * calibration["flights"]).sum() / calibration["flights"].sum())
 recall_by_hour = group_errors[(group_errors["dimension"] == "hour_band") & (group_errors["metric"] == "recall")].sort_values("value")
-trigger_line = 0.8 * float(full_weeks["value"].median())
+trigger_line = float(first["recheck_line"])          # set in notebook 07 from the validation weeks
 
 
 # ---------------------------------------------------------------- charts
@@ -191,6 +191,8 @@ def runs_of(text):
 
 def estimate_height(paragraphs, width_in):
     """Rough height in inches of wrapped text, measured with the real Calibri widths (to catch overflow early)."""
+    if not all(path.exists() for path in FONT_FILES.values()):      # the fit estimate needs the Calibri font files; skip it elsewhere
+        return 0.0
     total = 0.0
     for p in paragraphs:
         size = p.get("size", 16)
@@ -272,6 +274,10 @@ def add_picture_fit(slide, path, x, y, w, h, alt):
 
 
 prs = Presentation()
+prs.core_properties.title = "Predicting late and cancelled flights"
+prs.core_properties.author = "bssam99"
+prs.core_properties.last_modified_by = "bssam99"
+prs.core_properties.comments = "Built with Claude Code from the files in reports/; see slides/source_map.csv"
 prs.slide_width, prs.slide_height = Inches(13.333), Inches(7.5)
 BLANK = prs.slide_layouts[6]
 MX = 0.6   # side margin
@@ -372,7 +378,8 @@ for i, (color, head, body) in enumerate([
     y = 1.75 + i * 1.7
     add_card(s, MX, y, 4.75, 1.5, [{"text": head, "size": 18, "bold": True, "after": 4}, {"text": body, "size": 16}], f"Card: {head[:28]}", text_margin=0.22 + 0.0, anchor=MSO_ANCHOR.MIDDLE)
     add_dot(s, MX + 4.75 - 0.42, y + 0.18, 0.22, color, f"Colour key {i + 1}")
-add_picture_fit(s, prepared("03_time_of_day.png"), 5.65, 1.65, 7.1, 5.2, "Average delay by time of day for the three destination types")
+add_picture_fit(s, prepared("03_time_of_day.png"), 5.65, 1.65, 7.1, 4.75, "Average delay by time of day for the three destination types")
+add_text(s, 5.65, 6.45, 7.1, 0.5, [{"text": "The groups are a simplification: they shift when built from other months, and 'thin routes' is the least stable.", "size": 12, "color": INK2}], "Groups caveat")
 notes(s, 7, "Destinations were grouped by their delay pattern. Each type gets a different action.")
 
 # 8 months
@@ -407,7 +414,7 @@ s = new_slide(11, "Two decision cards: what to do, for how many flights, and whe
 c1 = [{"text": "Card 1 · warn the client", "size": 19, "bold": True, "after": 4},
       {"text": f"<b>Who:</b> the {src(11, '2 in 10', '07_value_first.csv', 'share_flagged')} riskiest flights, {src(11, f'{int(first.flagged):,}', '07_value_first.csv', 'flagged')} in 3 months.", "size": 15, "after": 3},
       {"text": "<b>Do:</b> warn the client and check the connection. A person confirms first.", "size": 15, "after": 3},
-      {"text": f"<b>Re-check</b> if the weekly reach falls below <b>{src(11, f'{trigger_line:.0%}', '07_weekly_scores.csv', 'value (median of full weeks x 0.8)')}</b> two weeks in a row. It stayed between {src(11, f'{full_weeks.value.min():.0%}', '07_weekly_scores.csv', 'value (min)')} and {src(11, f'{full_weeks.value.max():.0%}', '07_weekly_scores.csv', 'value (max)')}.", "size": 15}]
+      {"text": f"<b>Re-check</b> if the weekly reach falls below <b>{src(11, f'{trigger_line:.0%}', '07_value_first.csv', 'recheck_line')}</b> two weeks in a row. It stayed between {src(11, f'{full_weeks.value.min():.0%}', '07_weekly_scores.csv', 'value (min)')} and {src(11, f'{full_weeks.value.max():.0%}', '07_weekly_scores.csv', 'value (max)')}.", "size": 15}]
 c2 = [{"text": "Card 2 · check the connection", "size": 19, "bold": True, "after": 4},
       {"text": f"<b>Who:</b> the {src(11, '1 in 20', '07_value_second.csv', 'flagged')} flights with the highest predicted delay, {src(11, f'{int(second.flagged):,}', '07_value_second.csv', 'flagged')} in 3 months.", "size": 15, "after": 3},
       {"text": "<b>Do:</b> tell the client to expect a long delay and prepare a backup.", "size": 15, "after": 3},

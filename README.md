@@ -31,7 +31,7 @@ Two numbers on the decision cards are **business assumptions, not data**: the ag
 
 NYC flights 2023: one row per flight that left JFK, LGA or EWR, plus weather, planes, airports and airlines. Licence CC0.
 
-Get the five files `flights.csv`, `weather.csv`, `planes.csv`, `airports.csv` and `airlines.csv` from your instructor, or from the original source https://github.com/moderndive/nycflights23, and put them in a folder called `data/` at the root of this project. **The data is never committed** (`data/` is in `.gitignore`); the notebooks write their intermediate files to `data/processed/`.
+Get the five files `flights.csv`, `weather.csv`, `planes.csv`, `airports.csv` and `airlines.csv` from your instructor (the dataset is the 2023 New York flights data published as `nycflights23`: https://github.com/moderndive/nycflights23), and put them in a folder called `data/` at the root of this project. Nothing depends on an exact file size: notebook 01 records a fingerprint of each file and checks that no step changes it. **The data is never committed** (`data/` is in `.gitignore`); the notebooks write their intermediate files to `data/processed/`.
 
 Cite: C. Ismay, S. P. Couch, H. Wickham, "nycflights23" (2025).
 
@@ -40,7 +40,7 @@ Cite: C. Ismay, S. P. Couch, H. Wickham, "nycflights23" (2025).
 ```bash
 pip install -r requirements.txt
 python tools/run_notebooks.py          # runs the 8 notebooks in order, from a fresh kernel each (about 5 minutes)
-python -m pytest tests -q              # 37 tests
+python -m pytest tests -q              # 48 tests
 python slides/build_deck.py            # rebuilds deck.pptx; the PDF is exported from it with Microsoft PowerPoint (Windows)
 ```
 
@@ -57,6 +57,7 @@ Each notebook also runs on its own with Kernel > Restart and Run All, after the 
 
 - **One year of data**, so seasons cannot be learned, and the October-December months were much calmer than January-September (14% late or cancelled against 26%). Risk scores run too high there; we trust the ranking, not the percentages.
 - **Prediction 2 helps little on average** (1.1% closer than a simple guess on the test months); it is useful for ranking flights. One linear model did not beat the simple guess there and is reported, not used. Its choice as second prediction was a close call (D-027).
+- **The destination groups are a simplification.** New random starts give the same groups (agreement 1.00), but removing the time-of-day columns (0.47) or using only January-June (0.61) changes them, and the 6-destination "thin routes" group is the least stable (4 destinations when built from January-June). Read them as useful types of situation, not natural categories.
 - **Weather timestamps:** we use the reading stamped 2 hours before the scheduled hour. If readings are stamped at the end of their hour, that reading can be up to about 50 minutes newer than the decision time; a 3-hour lag would remove the doubt. The data does not say which convention applies (open question).
 - **Two capacities are assumptions** to confirm with the agency (warn 2 flights in 10, check 1 in 20), and the data has no prices, so no money figure is shown.
 

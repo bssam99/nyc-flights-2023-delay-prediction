@@ -22,6 +22,7 @@ WRITTEN_BY = {
     "weather_clean.parquet": "01_clean",
     "planes_clean.parquet": "01_clean",
     "destination_groups.parquet": "03_groups",
+    "destination_groups_fit.parquet": "03_groups",
     "features.parquet": "05_features",
     "predictions_test_late.parquet": "06a_models_first",
     "predictions_test_second.parquet": "06b_models_second",

@@ -1,0 +1,7 @@
+check,value
+20 other random starts: lowest agreement with the chosen grouping (1 = identical),1.0
+20 other random starts: share of runs that find the same 'thin routes' destinations,1.0
+without the time-of-day columns: agreement with the chosen grouping (1 = identical),0.473
+without the time-of-day columns: finds the same 'thin routes' destinations (1 = yes),0.0
+groups from January-June only: agreement with the January-September groups (1 = identical),0.612
+groups from January-June only: size of the 'thin routes' group,4.0

@@ -1,10 +1,18 @@
+import hashlib
+
 import pandas as pd
+import pytest
 
 from src import common
 
 
 def _csv(name):
     return pd.read_csv(common.REPORTS / name)
+
+
+def _parquet(name, **kwargs):
+    common.require_processed(name)        # a clear "run the earlier notebooks first" message instead of a pandas error
+    return pd.read_parquet(common.PROC / name, **kwargs)
 
 
 def test_task1_clean_data_and_report():
@@ -17,10 +25,9 @@ def test_task1_clean_data_and_report():
     assert rows["planes_year_missing"] == 89 and rows["weather_gap"] == 826
     assert {"tailnum_not_in_planes", "weather_values_missing", "extreme_delay",
             "duplicates_and_impossible_values"} <= set(rows)
-    f = pd.read_parquet(common.PROC / "flights_clean.parquet")
+    f = _parquet("flights_clean.parquet")
     assert len(f) == common.FLIGHT_ROWS and f["row_id"].is_unique and f["dep_time"].max() < 2400
-    assert len(pd.read_parquet(common.PROC / "weather_clean.parquet")) == 26_280
-    assert (common.RAW / "flights.csv").stat().st_size == 44_693_966
+    assert len(_parquet("weather_clean.parquet")) == 26_280
 
 
 def test_task2_findings_and_second_prediction():
@@ -36,7 +43,7 @@ def test_task2_findings_and_second_prediction():
 
 
 def test_task3_groups():
-    g = pd.read_parquet(common.PROC / "destination_groups.parquet")
+    g = _parquet("destination_groups.parquet")
     assert g["dest"].is_unique and len(g) == 118 and g["group_name"].notna().all()
     r = _csv("03_groups.csv")
     assert r[["group_name", "typical", "action"]].notna().all().all()
@@ -63,7 +70,7 @@ def test_task5_features():
     t = _csv("05_feature_table.csv")
     assert len(t) >= 10 and (t["known_in_advance"] == "yes").all()
     assert t[["what", "why"]].notna().all().all() and not (set(t["feature"]) & FORBIDDEN)
-    f = pd.read_parquet(common.PROC / "features.parquet")
+    f = _parquet("features.parquet")
     assert len(f) == common.FLIGHT_ROWS and set(t["feature"]) <= set(f.columns)
     assert {"row_id", "part", "late_or_cancelled", "dep_delay"} <= set(f.columns)
 
@@ -75,8 +82,8 @@ def test_task6a_first_prediction():
             "neural_network"} <= set(pr.index)
     for m in ["logistic_regression", "gradient_boosting", "neural_network"]:
         assert pr[m] > pr["dumb_never_late"]
-    p = pd.read_parquet(common.PROC / "predictions_test_late.parquet")
-    f = pd.read_parquet(common.PROC / "features.parquet", columns=["row_id", "part"])
+    p = _parquet("predictions_test_late.parquet")
+    f = _parquet("features.parquet", columns=["row_id", "part"])
     assert set(p["row_id"]) == set(f.loc[f["part"] == "test", "row_id"]) and p["risk"].between(0, 1).all()
     assert {"dep_time", "dep_delay", "arr_time", "arr_delay", "air_time"} <= set(_csv("06_leakage_removed.csv")["column"])
     assert {"carrier", "origin", "dest_group", "hour_band"} <= set(_csv("06a_group_errors.csv")["dimension"])
@@ -94,7 +101,7 @@ def test_task6b_second_prediction():
     else:
         pr = r[r["metric"] == "pr_auc"].set_index("model")["value"]
         assert pr["logistic_regression"] > pr["dumb_never"] and pr["gradient_boosting"] > pr["dumb_never"]
-    p = pd.read_parquet(common.PROC / "predictions_test_second.parquet")
+    p = _parquet("predictions_test_second.parquet")
     assert p["row_id"].is_unique and len(p) > 90_000
 
 
@@ -125,6 +132,7 @@ def test_task8_deck():
     prs = Presentation(common.ROOT / "slides" / "deck.pptx")
     assert 11 <= len(prs.slides) <= 14
     assert all(slide.has_notes_slide and slide.notes_slide.notes_text_frame.text.strip() for slide in prs.slides)
+    assert prs.core_properties.last_modified_by != "Steve Canny" and prs.core_properties.title.strip()
     sm = pd.read_csv(common.ROOT / "slides" / "source_map.csv")
     assert list(sm.columns) == ["slide", "text", "file", "column"] and len(sm) > 0
     assert all((common.REPORTS / f).exists() for f in sm["file"].unique())
@@ -135,7 +143,7 @@ def test_task8_deck():
 
 
 def test_no_feature_reveals_a_cancelled_flight():
-    f = pd.read_parquet(common.PROC / "features.parquet")
+    f = _parquet("features.parquet")
     cancelled = f["dep_delay"].isna()
     for c in _csv("05_feature_table.csv")["feature"]:
         col = f[c]
@@ -179,8 +187,8 @@ def test_plane_columns_do_not_reveal_a_missing_tail_number():
     tell the two kinds apart (empty plane details would leak 'cancelled'). Old broken columns scored AUC 0.99, fixed 0.67."""
     from sklearn.ensemble import HistGradientBoostingClassifier
     from sklearn.metrics import roc_auc_score
-    f = pd.read_parquet(common.PROC / "features.parquet")
-    flights = pd.read_parquet(common.PROC / "flights_clean.parquet", columns=["row_id", "no_tailnum"])
+    f = _parquet("features.parquet")
+    flights = _parquet("flights_clean.parquet", columns=["row_id", "no_tailnum"])
     cancelled = f.merge(flights, on="row_id").query("dep_delay != dep_delay")
     columns = [c for c in ["seats", "plane_age", "plane_known"] if c in cancelled.columns]
     order = cancelled.sample(frac=1.0, random_state=common.SEED)
@@ -188,3 +196,68 @@ def test_plane_columns_do_not_reveal_a_missing_tail_number():
     model = HistGradientBoostingClassifier(random_state=common.SEED).fit(order[columns].iloc[:half], order["no_tailnum"].iloc[:half])
     auc = roc_auc_score(order["no_tailnum"].iloc[half:], model.predict_proba(order[columns].iloc[half:])[:, 1])
     assert auc < 0.8, f"the plane columns reveal a missing tail number (AUC {auc:.2f})"
+
+
+def test_parquet_helper_gives_a_clear_message_when_a_notebook_has_not_run(tmp_path, monkeypatch):
+    monkeypatch.setattr(common, "PROC", tmp_path)
+    with pytest.raises(FileNotFoundError, match="Run the earlier notebooks"):
+        _parquet("features.parquet")
+
+
+def test_original_files_are_unchanged_since_notebook_01():
+    common.require_raw_files()
+    fingerprint = _csv("01_raw_fingerprint.csv")
+    assert len(fingerprint) == 5
+    for r in fingerprint.itertuples():
+        assert hashlib.sha256((common.RAW / r.file).read_bytes()).hexdigest() == r.sha256, f"{r.file} changed since notebook 01 ran"
+
+
+def test_task3_groups_are_checked_for_stability_and_have_a_tuning_version():
+    st = _csv("03_stability.csv")
+    assert list(st.columns) == ["check", "value"] and len(st) >= 6
+    g = _parquet("destination_groups_fit.parquet")
+    assert g["dest"].is_unique and len(g) == 118
+
+
+def test_tuning_uses_groups_built_without_the_valid_months():
+    assert "dest_group_fit" in _parquet("features.parquet").columns
+    import nbformat
+    for name in ["06a_models_first", "06b_models_second"]:
+        cells = [c.source for c in nbformat.read(common.ROOT / "notebooks" / f"{name}.ipynb", 4).cells if c.cell_type == "code"]
+        marker = next(i for i, c in enumerate(cells) if "# ---- FINAL TEST (run once) ----" in c)
+        assert any("dest_group_fit" in c for c in cells[:marker]), f"{name}: tuning does not use the January-June groups"
+
+
+def test_task7_recheck_line_comes_from_the_validation_months():
+    w = _csv("06a_valid_weekly_reach.csv")
+    assert len(w) >= 10 and {"week_start", "n", "recall_at_20pct"} <= set(w.columns)
+    assert "recheck_line" in _csv("07_value_first.csv").columns
+    text = _csv("07_cards.csv").query("card == 'first' and line_no == 9")["text"].iloc[0]
+    assert "July to September" in text
+
+
+def test_task2_intervals_resample_whole_days():
+    f = _csv("02_findings.csv").iloc[:4]
+    assert (f["check_type"] == "confidence_interval").all()
+    assert f["check_result"].str.contains("whole days").all()
+
+
+def test_cards_have_no_time_s_wording():
+    assert not _csv("07_cards.csv")["text"].str.contains(r"time\(s\)", regex=True).any()
+
+
+def test_readme_numbers_match_the_report_files():
+    readme = (common.ROOT / "README.md").read_text(encoding="utf-8")
+    v1, v2 = _csv("07_value_first.csv").iloc[0], _csv("07_value_second.csv").iloc[0]
+    cal = _csv("06a_calibration.csv")
+    predicted = (cal["mean_predicted"] * cal["flights"]).sum() / cal["flights"].sum()
+    hours = _csv("06a_group_errors.csv").query("dimension == 'hour_band' and metric == 'recall'").sort_values("value")
+    adj = _csv("02_domino_adjusted.csv").iloc[0]
+    expected = [f"reaches **{v1.recall:.0%}**", f"{v1.precision * 100:.0f} warnings in 100", f"{v1.base_rate * 100:.0f} flights in 100 are late",
+                f"{v2.mae_model:.2f} minutes against {v2.mae_dumb:.2f}", f"({v2.lift:.1f} times more)",
+                f"({predicted:.0%} predicted, {v1.base_rate:.0%} real)", f"only {hours.iloc[0].value:.0%} of the time (evening: {hours.iloc[-1].value:.0%})",
+                f"{adj.same_day_gap_points:.0f} points of that gap remain"]
+    st = _csv("03_stability.csv")["value"]
+    expected += [f"removing the time-of-day columns ({st.iloc[2]:.2f}) or using only January-June ({st.iloc[4]:.2f})"]
+    missing = [e for e in expected if e not in readme]
+    assert not missing, f"README numbers are out of date: {missing}"
