@@ -43,6 +43,14 @@ def test_notebooks_have_no_local_paths():
 
 
 MARKER = "# ---- FINAL TEST (run once) ----"
+REACHES_TEST_MONTHS = [re.compile(p) for p in [
+    r"""['"]test['"]""",                                                     # the part is named
+    r"""~[^\n]*\.isin\(\s*\[[^\]]*['"](fit|valid)['"]""",                   # everything that is not fit / valid
+    r"""!=\s*['"](fit|valid)['"]""",                                         # part != "fit" or "valid" includes the test months
+    r"""split_part\(""",                                                     # recomputing the split
+    r"""month['"]?\]?\s*(>=?\s*(9|10|11|12)\b|==\s*1[0-2]\b)""",             # October-December picked by month number
+    r"""month['"]?\]?\.isin\(\s*\[\s*1[0-2]\b""",
+]]
 
 
 def _cells_using_test_part_before_marker(nb):
@@ -51,7 +59,7 @@ def _cells_using_test_part_before_marker(nb):
     first = next((i for i, s in enumerate(cells) if MARKER in s), None)
     if first is None:
         return None
-    return [i for i in range(first) if "'test'" in cells[i] or '"test"' in cells[i]]
+    return [i for i in range(first) if any(pattern.search(cells[i]) for pattern in REACHES_TEST_MONTHS)]
 
 
 def _nb(*sources):
@@ -60,6 +68,14 @@ def _nb(*sources):
 
 def test_guard_flags_a_notebook_that_touches_the_test_part_early():
     assert _cells_using_test_part_before_marker(_nb("x = df[df.part == 'test']", MARKER)) == [0]
+    # ways to reach the held-out months without writing the word: they must be flagged too
+    assert _cells_using_test_part_before_marker(_nb('x = df[~df["part"].isin(["fit", "valid"])]', MARKER)) == [0]
+    assert _cells_using_test_part_before_marker(_nb('x = df[df["part"] != "valid"]', MARKER)) == [0]
+    assert _cells_using_test_part_before_marker(_nb('x = df[df["month"] >= 10]', MARKER)) == [0]
+    assert _cells_using_test_part_before_marker(_nb('x = df[df["month"].isin([10, 11, 12])]', MARKER)) == [0]
+    assert _cells_using_test_part_before_marker(_nb('x = common.split_part(df["month"])', MARKER)) == [0]
+    # and the ordinary training and validation selections are fine
+    assert _cells_using_test_part_before_marker(_nb('x = df[df["part"] == "fit"]; y = df[df["part"].isin(["fit", "valid"])]', MARKER)) == []
     assert _cells_using_test_part_before_marker(_nb("x = 1", MARKER, "y = df[df.part == 'test']")) == []
     assert _cells_using_test_part_before_marker(_nb("x = 1")) is None
 

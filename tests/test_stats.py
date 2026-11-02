@@ -1,6 +1,7 @@
 import numpy as np
+import pytest
 
-from src.stats import day_bootstrap, per_day_counts
+from src.stats import day_bootstrap, day_bootstrap_cells, per_day_counts
 
 
 def test_per_day_counts_aligns_days_and_fills_missing_days_with_zero():
@@ -28,3 +29,26 @@ def test_day_bootstrap_is_wider_than_the_flight_level_interval_when_days_share_a
     p = counts[:, 0].sum() / counts[:, 1].sum()
     flight_level_width = 2 * 1.96 * np.sqrt(p * (1 - p) / counts[:, 1].sum())
     assert (high - low) > 2 * flight_level_width
+
+
+def test_day_bootstrap_cells_gives_an_interval_for_a_difference_of_two_jumps():
+    rng = np.random.default_rng(2)
+    n = np.full(150, 150)
+    base, domino, weather = [np.column_stack([rng.binomial(n, rate), n]) for rate in (0.20, 0.55, 0.32)]
+    point, low, high = day_bootstrap_cells([base, domino, weather], lambda r: (r[1] - r[0]) - (r[2] - r[0]), draws=500)
+    assert low < point < high and low > 0.10        # the true difference of the jumps is 0.35 - 0.12 = 0.23
+
+
+def test_day_bootstrap_cells_agrees_with_the_two_group_version():
+    rng = np.random.default_rng(3)
+    n = np.full(60, 100)
+    a, b = np.column_stack([rng.binomial(n, 0.25), n]), np.column_stack([rng.binomial(n, 0.35), n])
+    assert np.allclose(day_bootstrap(a, b, lambda x, y: y - x, draws=300), day_bootstrap_cells([a, b], lambda r: r[1] - r[0], draws=300))
+
+
+def test_bad_inputs_raise_clear_errors_instead_of_asserting():
+    ok = np.column_stack([np.ones(5), np.full(5, 10.0)])
+    with pytest.raises(ValueError, match="same shape"):
+        day_bootstrap(ok, ok[:4], lambda x, y: y - x)
+    with pytest.raises(ValueError, match="same shape"):
+        day_bootstrap_cells([ok, ok[:4]], lambda r: r[0])

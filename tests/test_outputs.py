@@ -1,5 +1,6 @@
 import hashlib
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -133,6 +134,12 @@ def test_task8_deck():
     assert 11 <= len(prs.slides) <= 14
     assert all(slide.has_notes_slide and slide.notes_slide.notes_text_frame.text.strip() for slide in prs.slides)
     assert prs.core_properties.last_modified_by != "Steve Canny" and prs.core_properties.title.strip()
+    # no leftovers of python-pptx's built-in template (a 2013 date, "Microsoft Macintosh PowerPoint", a 4:3 page format)
+    import datetime
+    import zipfile
+    assert prs.core_properties.created > datetime.datetime(2024, 1, 1) and prs.core_properties.modified > datetime.datetime(2024, 1, 1)
+    app = zipfile.ZipFile(common.ROOT / "slides" / "deck.pptx").read("docProps/app.xml").decode("utf-8")
+    assert "Macintosh" not in app and "4:3" not in app and "On-screen" not in app
     sm = pd.read_csv(common.ROOT / "slides" / "source_map.csv")
     assert list(sm.columns) == ["slide", "text", "file", "column"] and len(sm) > 0
     assert all((common.REPORTS / f).exists() for f in sm["file"].unique())
@@ -159,6 +166,29 @@ def test_task2_second_prediction_records_the_probe_with_and_without_month():
     assert (s["probe_gain"] >= 0.03) == (s["choice"] == "minutes_late")
 
 
+def test_task2_key_numbers_match_the_finding_texts():
+    """The deck reads these numbers by name instead of cutting them out of the finding sentences by position."""
+    k = _csv("02_key_numbers.csv").astype(str).set_index("name")["value"]
+    n = _csv("02_findings.csv")["number"]
+    assert f"{k['morning_pct']}% of flights" in n[0] and f"against {k['evening_pct']}%" in n[0]
+    assert f"left more than 15 minutes late, {k['late_plane_pct']}% of" in n[1] and f"against {k['ok_plane_pct']}% when" in n[1]
+    assert f"{k['airline_best']} has {k['best_pct']}% of flights" in n[2] and f"{k['airline_worst']} has {k['worst_pct']}%" in n[2]
+    assert f"adds {k['plane_points']} points and bad weather adds {k['weather_points']}" in n[3]
+    assert f"{k['ten_days_pct']}% of all cancellations" in n[4]
+    thin = _csv("03_groups.csv").query("group_id == 2").iloc[0]
+    assert f"{int(thin['late_pct'])}% of flights late" in thin["typical"]
+
+
+def test_task2_weather_finding_checks_the_comparison_its_title_makes():
+    """The title says a late earlier flight raises the risk more than bad weather, so the check must be an interval for the
+    difference between the two jumps (resampling whole days), not only for the weather jump."""
+    f = _csv("02_findings.csv")
+    row = f[f["finding"].str.contains("bigger jump in risk than bad weather")].iloc[0]
+    assert "difference between the two jumps" in row["check_result"] and "95% interval" in row["check_result"]
+    airlines = f[f["finding"].str.contains("Airlines differ")].iloc[0]
+    assert "picked from the same data" in airlines["check_result"]
+
+
 def test_task2_domino_gap_is_checked_within_the_same_day():
     d = _csv("02_domino_adjusted.csv").iloc[0]
     assert 0 < d["same_day_gap_points"] < d["raw_gap_points"] and d["strata"] > 1000
@@ -167,14 +197,25 @@ def test_task2_domino_gap_is_checked_within_the_same_day():
 
 
 def test_task7_card1_can_be_used_as_described():
+    """The card must describe a rule that can run live: a cut-off taken from the scores of the previous 7 days (no future
+    flights, no outcomes). Ranking each day needs the whole day ahead; ranking each hour on its own is the strict case."""
     v = _csv("07_value_first.csv").iloc[0]
-    assert v["recall_ranked_per_day"] > v["random_recall"]
-    text = " ".join(_csv("07_cards.csv")["text"]).lower()
-    assert "tomorrow" not in text and "warn only if" not in text
+    assert abs(v["share_live_rule"] - 0.20) < 0.03
+    assert v["recall_live_rule"] > 1.5 * v["share_live_rule"]
+    assert v["recall_ranked_per_hour"] > v["random_recall"]
+    cards = _csv("07_cards.csv")
+    text = " ".join(cards["text"]).lower()
+    assert "tomorrow" not in text and "warn only if" not in text and "day by day" not in text
+    cut_off = cards.query("card == 'first' and line == 'Cut-off'")["text"].iloc[0]
+    assert f"{v['recall_live_rule']:.0%}" in cut_off and "previous 7 days" in cut_off and f"{v['recall_ranked_per_hour']:.0%}" in cut_off
+    finding = cards.query("card == 'first' and line == 'Finding'")["text"].iloc[0]
+    assert "flew earlier that day" not in finding and "left at least 2 hours" in finding
 
 
 def test_task3_steady_routes_are_not_oversold():
-    assert not _csv("03_groups.csv")["action"].str.contains("safe default", case=False).any()
+    actions = _csv("03_groups.csv")["action"]
+    assert not actions.str.contains("safe default", case=False).any()
+    assert not actions.str.contains("no special warning", case=False).any()      # card 1 gives the same list to every destination
 
 
 def test_readme_discloses_that_the_test_months_overall_rates_were_seen_in_design():
@@ -182,20 +223,19 @@ def test_readme_discloses_that_the_test_months_overall_rates_were_seen_in_design
     assert "D-004" in readme and "never seen" not in readme.lower()
 
 
-def test_plane_columns_do_not_reveal_a_missing_tail_number():
-    """Every flight without a tail number is a cancelled flight. Among cancelled flights, the plane columns must not
-    tell the two kinds apart (empty plane details would leak 'cancelled'). Old broken columns scored AUC 0.99, fixed 0.67."""
+def test_plane_columns_do_not_reveal_a_cancelled_flight_within_one_airline():
+    """Nearly all no-tail flights are United's, and every one is cancelled. Planes drawn from other airlines' fleets would
+    still stand out among United's own flights, so the plane columns alone must not separate cancelled from normal United
+    flights (January-September). Drawing from all airlines gave AUC 0.90; a same-airline draw is near 0.5."""
     from sklearn.ensemble import HistGradientBoostingClassifier
     from sklearn.metrics import roc_auc_score
     f = _parquet("features.parquet")
-    flights = _parquet("flights_clean.parquet", columns=["row_id", "no_tailnum"])
-    cancelled = f.merge(flights, on="row_id").query("dep_delay != dep_delay")
-    columns = [c for c in ["seats", "plane_age", "plane_known"] if c in cancelled.columns]
-    order = cancelled.sample(frac=1.0, random_state=common.SEED)
-    half = len(order) // 2
-    model = HistGradientBoostingClassifier(random_state=common.SEED).fit(order[columns].iloc[:half], order["no_tailnum"].iloc[:half])
-    auc = roc_auc_score(order["no_tailnum"].iloc[half:], model.predict_proba(order[columns].iloc[half:])[:, 1])
-    assert auc < 0.8, f"the plane columns reveal a missing tail number (AUC {auc:.2f})"
+    united = f.query("carrier == 'UA' and part != 'test'").sample(frac=1.0, random_state=common.SEED)
+    cancelled = united["dep_delay"].isna().astype(int)
+    half = len(united) // 2
+    model = HistGradientBoostingClassifier(random_state=common.SEED).fit(united[["seats", "plane_age"]].iloc[:half], cancelled.iloc[:half])
+    auc = roc_auc_score(cancelled.iloc[half:], model.predict_proba(united[["seats", "plane_age"]].iloc[half:])[:, 1])
+    assert auc < 0.7, f"the plane columns separate cancelled United flights from the rest (AUC {auc:.2f})"
 
 
 def test_parquet_helper_gives_a_clear_message_when_a_notebook_has_not_run(tmp_path, monkeypatch):
@@ -221,6 +261,12 @@ def test_task3_groups_are_checked_for_stability_and_have_a_tuning_version():
 
 def test_tuning_uses_groups_built_without_the_valid_months():
     assert "dest_group_fit" in _parquet("features.parquet").columns
+    # the January-June groups call a destination "rare" by its January-June flights, the final groups by its January-September flights
+    flights = _parquet("flights_clean.parquet", columns=["dest", "part"])
+    for file, parts in [("destination_groups_fit.parquet", ["fit"]), ("destination_groups.parquet", ["fit", "valid"])]:
+        groups = _parquet(file).set_index("dest")
+        seen = flights[flights["part"].isin(parts)].groupby("dest").size().reindex(groups.index).fillna(0)
+        assert ((groups["group_id"] == -1) == (seen < 100)).all(), f"{file}: the rare destinations do not follow the flights of {parts}"
     import nbformat
     for name in ["06a_models_first", "06b_models_second"]:
         cells = [c.source for c in nbformat.read(common.ROOT / "notebooks" / f"{name}.ipynb", 4).cells if c.cell_type == "code"]
@@ -231,9 +277,10 @@ def test_tuning_uses_groups_built_without_the_valid_months():
 def test_task7_recheck_line_comes_from_the_validation_months():
     w = _csv("06a_valid_weekly_reach.csv")
     assert len(w) >= 10 and {"week_start", "n", "recall_at_20pct"} <= set(w.columns)
-    assert "recheck_line" in _csv("07_value_first.csv").columns
+    line = _csv("07_value_first.csv").iloc[0]["recheck_line"]
+    assert abs(line - 0.8 * w.loc[w["n"] >= 5000, "recall_at_20pct"].median()) < 0.001
     text = _csv("07_cards.csv").query("card == 'first' and line_no == 9")["text"].iloc[0]
-    assert "July to September" in text
+    assert "July to September" in text and f"{line:.0%}" in text
 
 
 def test_task2_intervals_resample_whole_days():
@@ -242,8 +289,44 @@ def test_task2_intervals_resample_whole_days():
     assert f["check_result"].str.contains("whole days").all()
 
 
+def test_task2_first_interval_can_be_recomputed_from_the_flights():
+    """Evening (19-21 h) against morning (6-8 h) in January-September, resampling whole days: the numbers in the finding must be these."""
+    from src.stats import day_bootstrap, per_day_counts
+    flights = _parquet("flights_clean.parquet", columns=["part", "hour", "sched_dep_dt", "late_or_cancelled"])
+    train = flights[flights["part"] != "test"]
+    days = np.array(sorted(train["sched_dep_dt"].dt.date.unique()), dtype=object)
+    dates, late = train["sched_dep_dt"].dt.date.to_numpy(), train["late_or_cancelled"].to_numpy()
+    morning = per_day_counts(dates, late, train["hour"].between(6, 8).to_numpy(), days)
+    evening = per_day_counts(dates, late, train["hour"].between(19, 21).to_numpy(), days)
+    ratio, low, high = day_bootstrap(morning, evening, lambda a, b: b / a)
+    assert f"evening is {ratio:.1f} times the morning rate (95% interval {low:.1f} to {high:.1f})" in _csv("02_findings.csv").loc[0, "check_result"]
+
+
 def test_cards_have_no_time_s_wording():
     assert not _csv("07_cards.csv")["text"].str.contains(r"time\(s\)", regex=True).any()
+
+
+def test_owner_review_statement_says_which_version_was_checked():
+    """The owner's checks were reported for earlier versions. Until the owner re-checks the final one (the flag in the
+    checklist), the README, the checklist and the slide must say so, and the test count they quote must be the real one."""
+    checklist = (common.ROOT / "second-brain" / "review-checklist.md").read_text(encoding="utf-8")
+    readme = (common.ROOT / "README.md").read_text(encoding="utf-8")
+    flag = re.search(r"\*\*Re-check on the final version:\*\* (pending|done)", checklist)
+    assert flag, "the checklist must carry a line '**Re-check on the final version:** pending' or 'done'"
+    count = sum(len(re.findall(r"^def test_", p.read_text(encoding="utf-8"), flags=re.M)) for p in (common.ROOT / "tests").glob("test_*.py"))
+    assert f"then `{count} passed`" in checklist and f"# {count} tests" in readme, f"quote {count} tests"
+    from pptx import Presentation
+    slide12 = " ".join(sh.text_frame.text for sh in Presentation(common.ROOT / "slides" / "deck.pptx").slides[11].shapes if sh.has_text_frame)
+    if flag.group(1) == "pending":
+        assert "earlier version" in readme and "not yet repeated" in readme
+        assert "earlier version of the project" in slide12
+    else:
+        assert "earlier version of the project" not in slide12
+
+
+def test_readme_names_the_python_version_the_pinned_packages_need():
+    readme = (common.ROOT / "README.md").read_text(encoding="utf-8")
+    assert re.search(r"Python 3\.11 or newer", readme), "pandas 3 and numpy 2.4 need Python 3.11 or later; the README must say so"
 
 
 def test_readme_numbers_match_the_report_files():
@@ -257,6 +340,7 @@ def test_readme_numbers_match_the_report_files():
                 f"{v2.mae_model:.2f} minutes against {v2.mae_dumb:.2f}", f"({v2.lift:.1f} times more)",
                 f"({predicted:.0%} predicted, {v1.base_rate:.0%} real)", f"only {hours.iloc[0].value:.0%} of the time (evening: {hours.iloc[-1].value:.0%})",
                 f"{adj.same_day_gap_points:.0f} points of that gap remain"]
+    expected += [f"reaches **{v1.recall_live_rule:.0%}** of the late or cancelled flights (from", f"would reach {v1.recall_ranked_per_hour:.0%}"]
     st = _csv("03_stability.csv")["value"]
     expected += [f"removing the time-of-day columns ({st.iloc[2]:.2f}) or using only January-June ({st.iloc[4]:.2f})"]
     missing = [e for e in expected if e not in readme]

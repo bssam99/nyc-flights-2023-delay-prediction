@@ -6,9 +6,11 @@ Run from the project folder:  python slides/build_deck.py
 It writes slides/deck.pptx, slides/source_map.csv and slides/deck.pdf.
 The PPTX needs only python-pptx; the PDF export uses Microsoft PowerPoint (Windows), which must be installed.
 """
+import datetime
 import re
 import subprocess
 import sys
+import zipfile
 from pathlib import Path
 
 import matplotlib
@@ -48,17 +50,13 @@ def csv(name):
     return pd.read_csv(REPORTS / name)
 
 
-def pcts(text):
-    return [int(x) for x in re.findall(r"(\d+)%", text)]
-
-
 # ---------------------------------------------------------------- numbers
 months = csv("04_metrics_by_month.csv")
 total_flights = int(months["flights"].sum())
 overall_rate = float((months["late_or_cancelled_rate"] * months["flights"]).sum() / total_flights)
 report = csv("01_data_report.csv").set_index("problem")
 findings = csv("02_findings.csv")
-f_hour, f_domino, f_airline, f_weather, f_cancel = (findings.loc[i, "number"] for i in range(5))
+key = csv("02_key_numbers.csv").astype(str).set_index("name")["value"]      # written by notebook 02, next to the sentences it quotes
 groups = csv("03_groups.csv").set_index("group_id")
 first = csv("07_value_first.csv").iloc[0]
 second = csv("07_value_second.csv").iloc[0]
@@ -67,13 +65,11 @@ weekly["week_start"] = pd.to_datetime(weekly["week_start"])
 group_errors = csv("06a_group_errors.csv")
 calibration = csv("06a_calibration.csv")
 
-morning_pct, evening_pct = pcts(f_hour)[:2]
-late_plane_pct, ok_plane_pct = pcts(f_domino)[:2]
-airline_best, best_pct, airline_worst, worst_pct = re.search(r"airlines, (.+?) has (\d+)% of flights late or cancelled and (.+?) has (\d+)%", f_airline).groups()
-plane_points, weather_points = re.search(r"adds (\d+) points and bad weather adds (\d+)", f_weather).groups()
+morning_pct, evening_pct, late_plane_pct, ok_plane_pct = (key[n] for n in ["morning_pct", "evening_pct", "late_plane_pct", "ok_plane_pct"])
+airline_best, best_pct, airline_worst, worst_pct = (key[n] for n in ["airline_best", "best_pct", "airline_worst", "worst_pct"])
+plane_points, weather_points, ten_days_pct = (key[n] for n in ["plane_points", "weather_points", "ten_days_pct"])
 dom_adj = csv("02_domino_adjusted.csv").iloc[0]
-ten_days_pct = int(re.search(r"(\d+)% of all cancellations", f_cancel).group(1))
-thin_late = int(re.search(r"(\d+)% of flights late", groups.loc[2, "typical"]).group(1))
+thin_late = int(groups.loc[2, "late_pct"])
 july = months.set_index("month").loc[7]
 november = months.set_index("month").loc[11]
 late_total = round(first["hits"] / first["recall"])
@@ -166,7 +162,9 @@ def ticked_checks():
     out = [PLAIN[i] for i in ids if i.startswith("A") and i in PLAIN]
     b = [i for i in ids if i.startswith("B")]
     out += ["went through all 8 notebooks and the log of mistakes"] if len(b) == 8 else [PLAIN[i] for i in b if i in PLAIN]
-    return out, "A6" in ids
+    state = re.search(r"\*\*Re-check on the final version:\*\* (pending|done)", text)
+    assert state, "the checklist needs a line '**Re-check on the final version:** pending' or 'done'"
+    return out, state.group(1) == "done"
 
 
 # ---------------------------------------------------------------- PowerPoint helpers
@@ -278,6 +276,8 @@ prs.core_properties.title = "Predicting late and cancelled flights"
 prs.core_properties.author = "bssam99"
 prs.core_properties.last_modified_by = "bssam99"
 prs.core_properties.comments = "Built with Claude Code from the files in reports/; see slides/source_map.csv"
+prs.core_properties.created = prs.core_properties.modified = datetime.datetime.now().replace(microsecond=0)
+prs.core_properties.revision = 1
 prs.slide_width, prs.slide_height = Inches(13.333), Inches(7.5)
 BLANK = prs.slide_layouts[6]
 MX = 0.6   # side margin
@@ -327,7 +327,8 @@ notes(s, 1, "Open with the question the agency cares about: can we know two hour
 
 # 2 problem
 say2 = "If we knew two hours before which flights are at risk, we could warn the client and arrange a backup."
-s = new_slide(2, "Nearly 1 flight in 4 leaves late or is cancelled")
+assert 0.20 <= overall_rate < 0.25, "the slide-2 title says 'nearly 1 flight in 4'"
+s = new_slide(2, f"Nearly 1 flight in {src(2, str(round(1 / overall_rate)), '04_metrics_by_month.csv', '1 / late_or_cancelled_rate (weighted)')} leaves late or is cancelled")
 big_stat(s, src(2, f"{overall_rate:.1%}", "04_metrics_by_month.csv", "late_or_cancelled_rate, flights (weighted)"), "of flights left more than 15 minutes late, or never left", BLUE, say2, say_y=3.9)
 for i, (head, body) in enumerate([("Late means", "More than 15 minutes after the scheduled time, or the flight never leaves."),
                                   ("Why it matters", "A client misses a connection or a meeting."),
@@ -349,7 +350,7 @@ for i, (head, body) in enumerate([(f"{cancelled} cancelled flights", "Kept and m
 notes(s, 3, say3)
 
 # 4 hour
-say4 = "Flights scheduled in the morning are rarely late. By the evening, delays from earlier flights have piled up. <b>Clients with tight connections should fly in the morning.</b>"
+say4 = "Flights scheduled in the morning are rarely late; in the evening far more of them are. <b>Clients with tight connections should fly in the morning.</b>"
 chart_slide(4, "Delays build up through the day",
             f'{src(4, f"{morning_pct}%", "02_findings.csv", "number (row 1)")} → {src(4, f"{evening_pct}%", "02_findings.csv", "number (row 1)")}',
             "late or cancelled: flights at 6-9 am against 7-10 pm", ORANGE, say4, prepared("02_hour.png"), "Late or cancelled share by scheduled departure hour")
@@ -392,8 +393,9 @@ chart_slide(8, "July was the worst month and autumn the calmest",
 # 9 prediction 1
 say9 = (f"In October to December we would have warned <b>{src(9, f'{int(first.flagged):,}', '07_value_first.csv', 'flagged')}</b> flights (2 in 10) and reached <b>{src(9, f'{int(first.hits):,}', '07_value_first.csv', 'hits')}</b> "
         f"late or cancelled ones, against about <b>{src(9, f'{random_hits:,}', '07_value_first.csv', 'hits, recall, random_recall')}</b> by luck. "
-        f"{src(9, f'{first.precision * 100:.0f}', '07_value_first.csv', 'precision')} warnings in 100 were right; {src(9, f'{first.base_rate * 100:.0f}', '07_value_first.csv', 'base_rate')} flights in 100 were late.")
-s = new_slide(9, "Prediction 1: warn 2 flights in 10 and reach twice as many late ones as luck")
+        f"{src(9, f'{first.precision * 100:.0f}', '07_value_first.csv', 'precision')} warnings in 100 were right; {src(9, f'{first.base_rate * 100:.0f}', '07_value_first.csv', 'base_rate')} flights in 100 were late. "
+        f"Run live, with the cut-off set from the previous 7 days, it reaches <b>{src(9, f'{first.recall_live_rule:.0%}', '07_value_first.csv', 'recall_live_rule')}</b>.")
+s = new_slide(9, f"Prediction 1: warn 2 flights in 10 and reach {src(9, f'{first.lift:.1f}', '07_value_first.csv', 'lift')} times as many late ones as luck")
 big_stat(s, f'{src(9, f"{first.recall:.0%}", "07_value_first.csv", "recall")} vs {src(9, f"{first.random_recall:.0%}", "07_value_first.csv", "random_recall")}',
          "of the late or cancelled flights reached, against picking at random", BLUE, say9, say_h=2.0)
 for i, (fill, tcolor, head, body) in enumerate([("9EC5F4", INK, "Learn and tune", "Jan-Sep"), (BLUE, "FFFFFF", "Test, kept aside", "Oct-Dec")]):
@@ -423,14 +425,14 @@ add_card(s, MX, 1.7, 5.95, 2.2, c1, "Card 1 text")
 add_card(s, MX + 6.15, 1.7, 5.95, 2.2, c2, "Card 2 text")
 add_picture_fit(s, draw_weekly(), MX, 3.98, 12.1, 2.55, "Weekly reach of the warning list and weekly gain of the delay forecast")
 add_text(s, MX, 6.55, 12.1, 0.4, [{"text": "<b>Assumptions to confirm with the agency:</b> it can warn about 2 flights in 10 and check 1 in 20. If not, we change one number and everything updates.", "size": 14, "color": INK2}], "Assumption note")
-notes(s, 11, "Card 1 is ready to use as a daily warning list. Card 2 helps order the connection checks; its gain is small and fragile, and the card says so.")
+notes(s, 11, "Card 1 is a warning made two hours before each departure. Card 2 helps order the connection checks; its gain is small and fragile, and the card says so.")
 
 # 12 limits, next steps, AI (dark)
 morning, evening = recall_by_hour.iloc[0], recall_by_hour.iloc[-1]
-checks, fixes_checked = ticked_checks()
+checks, rechecked = ticked_checks()
 if checks:
-    owner = [{"text": "What I checked myself:", "size": 14, "bold": True, "color": "FFFFFF", "after": 3}] + [{"text": c, "size": 14, "color": "FFFFFF", "bullet": True, "after": 2} for c in checks[:7]] + (
-        [] if fixes_checked else [{"text": "My review ran while the last fixes were being made; I am re-checking those fixes.", "size": 14, "color": "FFFFFF", "after": 0}])
+    owner = [{"text": "What I checked myself:" if rechecked else "What I checked myself, on an earlier version of the project:", "size": 13, "bold": True, "color": "FFFFFF", "after": 3}] + [{"text": c, "size": 13, "color": "FFFFFF", "bullet": True, "after": 2} for c in checks] + (
+        [] if rechecked else [{"text": "The project changed after that; I have not yet repeated these checks on the final version.", "size": 13, "color": "FFFFFF", "after": 0}])
 else:
     owner = [{"text": "<b>What I checked myself:</b> my review of the analysis, the numbers and the code is in progress. This list is filled in from the checks I tick.", "size": 14, "color": "FFFFFF"}]
 s = new_slide(12, "What we do not know, what comes next, and how AI helped", dark=True)
@@ -451,6 +453,16 @@ notes(s, 12, "Be upfront about the limits. The last panel says exactly what the 
 # ---------------------------------------------------------------- save, source map, PDF
 pptx = SLIDES / "deck.pptx"
 prs.save(pptx)
+APP_XML = ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+           '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" '
+           'xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"><Application>python-pptx</Application>'
+           f'<PresentationFormat>Widescreen</PresentationFormat><Slides>{len(prs.slides)}</Slides><Notes>{len(prs.slides)}</Notes><HiddenSlides>0</HiddenSlides></Properties>')
+with zipfile.ZipFile(pptx) as zin:                 # python-pptx keeps its template's app properties (Macintosh PowerPoint, 4:3): replace them
+    parts = {item.filename: zin.read(item.filename) for item in zin.infolist()}
+parts["docProps/app.xml"] = APP_XML.encode("utf-8")
+with zipfile.ZipFile(pptx, "w", zipfile.ZIP_DEFLATED) as zout:
+    for name, data in parts.items():
+        zout.writestr(name, data)
 pd.DataFrame(SOURCE_MAP).to_csv(SLIDES / "source_map.csv", index=False)
 for w in WARNINGS:
     print("TEXT FIT WARNING:", w)

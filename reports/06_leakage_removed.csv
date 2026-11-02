@@ -9,4 +9,4 @@ diverted,Built from the missing arrival time: only known after the flight.
 late_or_cancelled,The target itself.
 weather at the scheduled departure hour,It is 2 hours in the future at prediction time. We use the reading from 2 hours earlier instead.
 earlier flight's delay when it had not yet left,Not known yet 2 hours before: the column is left empty in that case (`prev_known = 0`).
-an empty plane (no tail number),"Every flight without a tail number was cancelled, so empty plane columns would reveal the answer. Those flights get the typical plane in notebook 05."
+an empty plane (no tail number),"Every flight without a tail number was cancelled, so empty plane columns would reveal the answer. Those flights get a randomly drawn real plane of the same airline in notebook 05 (checked inside United alone, where most of them are)."
