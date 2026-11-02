@@ -1,0 +1,11 @@
+column,reason
+dep_time,The actual departure time: only known when the flight leaves. A missing value even means 'cancelled'.
+dep_delay,The actual departure delay: it is the answer itself (late means more than 15 minutes).
+arr_time,The actual arrival time: known after the flight lands; a missing value also reveals a cancelled or diverted flight.
+arr_delay,"The actual arrival delay: known after landing, and strongly tied to the departure delay."
+air_time,Minutes spent in the air: known only after the flight; missing for cancelled flights.
+cancelled,Built from the missing departure time: it is part of the answer.
+diverted,Built from the missing arrival time: only known after the flight.
+late_or_cancelled,The target itself.
+weather at the scheduled departure hour,It is 2 hours in the future at prediction time. We use the reading from 2 hours earlier instead.
+earlier flight's delay when it had not yet left,Not known yet 2 hours before: the column is left empty in that case (`prev_known = 0`).

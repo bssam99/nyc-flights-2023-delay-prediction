@@ -1,0 +1,10 @@
+model,metric,value
+dumb_median,mae_minutes,13.2665
+ridge,mae_minutes,13.4598
+gradient_boosting,mae_minutes,13.1217
+dumb_median,median_error_minutes,5.0
+ridge,median_error_minutes,5.8422
+gradient_boosting,median_error_minutes,4.4765
+dumb_median,mae_minutes_without_top1pct,10.6428
+ridge,mae_minutes_without_top1pct,10.9067
+gradient_boosting,mae_minutes_without_top1pct,10.5993

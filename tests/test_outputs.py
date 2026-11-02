@@ -66,3 +66,34 @@ def test_task5_features():
     f = pd.read_parquet(common.PROC / "features.parquet")
     assert len(f) == common.FLIGHT_ROWS and set(t["feature"]) <= set(f.columns)
     assert {"row_id", "part", "late_or_cancelled", "dep_delay"} <= set(f.columns)
+
+
+def test_task6a_first_prediction():
+    r = _csv("06a_results.csv")
+    pr = r[r["metric"] == "pr_auc"].set_index("model")["value"]
+    assert {"dumb_never_late", "hour_rule", "logistic_regression", "gradient_boosting",
+            "neural_network"} <= set(pr.index)
+    for m in ["logistic_regression", "gradient_boosting", "neural_network"]:
+        assert pr[m] > pr["dumb_never_late"]
+    p = pd.read_parquet(common.PROC / "predictions_test_late.parquet")
+    f = pd.read_parquet(common.PROC / "features.parquet", columns=["row_id", "part"])
+    assert set(p["row_id"]) == set(f.loc[f["part"] == "test", "row_id"]) and p["risk"].between(0, 1).all()
+    assert {"dep_time", "dep_delay", "arr_time", "arr_delay", "air_time"} <= set(_csv("06_leakage_removed.csv")["column"])
+    assert {"carrier", "origin", "dest_group", "hour_band"} <= set(_csv("06a_group_errors.csv")["dimension"])
+
+
+def test_task6b_second_prediction():
+    choice = _csv("02_second_prediction.csv").loc[0, "choice"]
+    r = _csv("06b_results.csv")
+    if choice == "minutes_late":
+        mae = r[r["metric"] == "mae_minutes"].set_index("model")["value"]
+        assert {"dumb_median", "ridge", "gradient_boosting"} <= set(mae.index)
+        # every model is compared with the dumb answer; the model we use must beat it. Ridge does not on the held-out
+        # months (see notebook 06b): that negative result is reported, not hidden.
+        assert mae.drop("dumb_median").min() < mae["dumb_median"]
+    else:
+        pr = r[r["metric"] == "pr_auc"].set_index("model")["value"]
+        assert pr["logistic_regression"] > pr["dumb_never"] and pr["gradient_boosting"] > pr["dumb_never"]
+    p = pd.read_parquet(common.PROC / "predictions_test_second.parquet")
+    assert p["row_id"].is_unique and len(p) > 90_000
+

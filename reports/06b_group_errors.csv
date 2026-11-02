@@ -1,0 +1,73 @@
+dimension,level,n,metric,value
+carrier,9E,13544,mae_model,9.9662
+carrier,9E,13544,mae_dumb,10.5867
+carrier,9E,13544,minutes_gained,0.6205
+carrier,AA,9593,mae_model,13.2426
+carrier,AA,9593,mae_dumb,13.3161
+carrier,AA,9593,minutes_gained,0.0735
+carrier,AS,1959,mae_model,11.8582
+carrier,AS,1959,mae_dumb,12.0041
+carrier,AS,1959,minutes_gained,0.1458
+carrier,B6,14890,mae_model,21.4075
+carrier,B6,14890,mae_dumb,22.7654
+carrier,B6,14890,minutes_gained,1.3579
+carrier,DL,15969,mae_model,13.0809
+carrier,DL,15969,mae_dumb,12.6496
+carrier,DL,15969,minutes_gained,-0.4313
+carrier,F9,359,mae_model,36.2338
+carrier,F9,359,mae_dumb,37.5209
+carrier,F9,359,minutes_gained,1.287
+carrier,G4,182,mae_model,9.1522
+carrier,G4,182,mae_dumb,9.4505
+carrier,G4,182,minutes_gained,0.2984
+carrier,HA,92,mae_model,24.2175
+carrier,HA,92,mae_dumb,24.7826
+carrier,HA,92,minutes_gained,0.5651
+carrier,MQ,221,mae_model,15.9838
+carrier,MQ,221,mae_dumb,16.7783
+carrier,MQ,221,minutes_gained,0.7945
+carrier,NK,4302,mae_model,16.77
+carrier,NK,4302,mae_dumb,16.7775
+carrier,NK,4302,minutes_gained,0.0075
+carrier,OO,1684,mae_model,15.1884
+carrier,OO,1684,mae_dumb,15.3254
+carrier,OO,1684,minutes_gained,0.1371
+carrier,UA,19211,mae_model,13.361
+carrier,UA,19211,mae_dumb,11.8005
+carrier,UA,19211,minutes_gained,-1.5605
+carrier,WN,3106,mae_model,13.1887
+carrier,WN,3106,mae_dumb,15.047
+carrier,WN,3106,minutes_gained,1.8583
+carrier,YX,19133,mae_model,7.2745
+carrier,YX,19133,mae_dumb,8.0881
+carrier,YX,19133,minutes_gained,0.8136
+origin,EWR,33020,mae_model,13.2361
+origin,EWR,33020,mae_dumb,12.3287
+origin,EWR,33020,minutes_gained,-0.9074
+origin,JFK,31795,mae_model,14.3836
+origin,JFK,31795,mae_dumb,15.0778
+origin,JFK,31795,minutes_gained,0.6942
+origin,LGA,39430,mae_model,12.0085
+origin,LGA,39430,mae_dumb,12.5914
+origin,LGA,39430,minutes_gained,0.5829
+dest_group,Afternoon build-up routes,58533,mae_model,14.9005
+dest_group,Afternoon build-up routes,58533,mae_dumb,14.7484
+dest_group,Afternoon build-up routes,58533,minutes_gained,-0.1521
+dest_group,Rare destinations (too few flights to judge),119,mae_model,9.6112
+dest_group,Rare destinations (too few flights to judge),119,mae_dumb,9.9664
+dest_group,Rare destinations (too few flights to judge),119,minutes_gained,0.3552
+dest_group,Steady regional routes,45181,mae_model,10.7077
+dest_group,Steady regional routes,45181,mae_dumb,11.2417
+dest_group,Steady regional routes,45181,minutes_gained,0.5339
+dest_group,Thin routes with long delays,412,mae_model,26.1487
+dest_group,Thin routes with long delays,412,mae_dumb,25.7403
+dest_group,Thin routes with long delays,412,minutes_gained,-0.4084
+hour_band,Afternoon (noon to 6 pm),37155,mae_model,13.8553
+hour_band,Afternoon (noon to 6 pm),37155,mae_dumb,14.0772
+hour_band,Afternoon (noon to 6 pm),37155,minutes_gained,0.2219
+hour_band,Evening (6 pm on),25214,mae_model,17.7444
+hour_band,Evening (6 pm on),25214,mae_dumb,17.2315
+hour_band,Evening (6 pm on),25214,minutes_gained,-0.5129
+hour_band,Morning (before noon),41876,mae_model,9.6876
+hour_band,Morning (before noon),41876,mae_dumb,10.1599
+hour_band,Morning (before noon),41876,minutes_gained,0.4723
