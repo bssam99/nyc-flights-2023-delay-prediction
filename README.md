@@ -24,7 +24,6 @@ Two numbers on the decision cards are **business assumptions, not data**: the ag
 | `reports/` | Small result tables and charts that the decision cards and the slides quote |
 | `slides/` | The stakeholder deck as an editable PowerPoint file (`deck.pptx`) and as `deck.pdf` exported from it, the script that builds both from `reports/`, and `source_map.csv` listing where every number on a slide comes from (also in each slide's speaker notes) |
 | `src/`, `tools/`, `tests/` | Shared code, notebook tools, and the tests (including leakage and "test months untouched" checks) |
-| `docs/` | The design spec and the implementation plan |
 
 ## Data
 
