@@ -1,0 +1,15 @@
+problem,rows,action,reason
+cancelled,10738,"keep, add flag `cancelled`","These flights never left, but they are exactly the ones the agency must warn about. They count as late in the target."
+diverted,715,"keep, add flag `diverted`","They left (so their delay is known) but have no arrival time. Arrival columns are never used to predict, so nothing is lost."
+dep_time_2400,27,fix: write 2400 as 0,2400 is midnight written a second way; all other midnight departures use 0.
+missing_tailnum,1913,"keep, add flag `no_tailnum`",Plane details cannot be joined. The flight stays; plane columns are simply missing for it.
+tailnum_not_in_planes,9371,keep,The plane table does not list every plane. Plane columns stay missing for these flights.
+planes_speed_all_zero,4840,drop the column,"Speed is 0 in every row, so it holds no information."
+planes_year_missing,89,"keep, add flag `year_missing`","The plane's age cannot be computed, but its other details are still useful."
+weather_gap,826,complete the hourly table; fill from the last reading within 3 hours; flag `weather_filled`,A flight with no weather row would lose its weather. Filling from a recent reading is better than dropping the flight.
+weather_values_missing,1241,keep as missing,A missing wind or visibility reading means no measurement. Inventing a value would hide that; models handle it explicitly later.
+extreme_delay,501,keep; report the median next to the mean,"Delays of 10+ hours are real overnight delays, not typing errors. They pull averages up, so we show medians too."
+duplicates_and_impossible_values,0,none needed,"We checked exact duplicates, repeated weather rows, air time or distance at or below 0, impossible hours and minutes, and humidity outside 0-100: none found."
+same_value_different_spelling,0,none needed,"Airline, origin and destination codes have no stray spaces or lower-case variants."
+time_hour_as_text,435352,convert to a real date-time,Needed to join the weather and to add the scheduled minute.
+times_as_hhmm_numbers,435352,keep as given; build `sched_dep_dt` for every time calculation,"1530 means 15:30, so subtracting these numbers gives nonsense. Real date-times avoid that."
