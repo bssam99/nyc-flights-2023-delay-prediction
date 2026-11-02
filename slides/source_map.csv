@@ -25,7 +25,7 @@ slide,text,file,column
 8,39%,04_metrics_by_month.csv,late_or_cancelled_rate (July)
 8,12%,04_metrics_by_month.csv,late_or_cancelled_rate (November)
 9,"20,894",07_value_first.csv,flagged
-9,"5,937",07_value_first.csv,hits
+9,"5,939",07_value_first.csv,hits
 9,"2,937",07_value_first.csv,"hits, recall, random_recall"
 9,28,07_value_first.csv,precision
 9,14,07_value_first.csv,base_rate
@@ -37,7 +37,7 @@ slide,text,file,column
 10,6%,07_value_second.csv,base_rate_long
 11,2 in 10,07_value_first.csv,share_flagged
 11,"20,894",07_value_first.csv,flagged
-11,30%,07_value_first.csv,recheck_line
+11,29%,07_value_first.csv,recheck_line
 11,36%,07_weekly_scores.csv,value (min)
 11,46%,07_weekly_scores.csv,value (max)
 11,1 in 20,07_value_second.csv,flagged

@@ -1,28 +1,28 @@
 dimension,level,n,metric,value
 carrier,9E,13603,late_rate,0.1031
-carrier,9E,13603,flagged_share,0.0817
-carrier,9E,13603,precision,0.3159
+carrier,9E,13603,flagged_share,0.0819
+carrier,9E,13603,precision,0.3151
 carrier,9E,13603,recall,0.2504
 carrier,AA,9600,late_rate,0.1199
-carrier,AA,9600,flagged_share,0.0926
-carrier,AA,9600,precision,0.2463
-carrier,AA,9600,recall,0.1903
+carrier,AA,9600,flagged_share,0.093
+carrier,AA,9600,precision,0.2475
+carrier,AA,9600,recall,0.192
 carrier,AS,1961,late_rate,0.1316
-carrier,AS,1961,flagged_share,0.1331
-carrier,AS,1961,precision,0.1877
+carrier,AS,1961,flagged_share,0.1341
+carrier,AS,1961,precision,0.1863
 carrier,AS,1961,recall,0.1899
 carrier,B6,14917,late_rate,0.2675
-carrier,B6,14917,flagged_share,0.4225
-carrier,B6,14917,precision,0.3966
-carrier,B6,14917,recall,0.6264
+carrier,B6,14917,flagged_share,0.4232
+carrier,B6,14917,precision,0.3963
+carrier,B6,14917,recall,0.6269
 carrier,DL,15977,late_rate,0.1349
-carrier,DL,15977,flagged_share,0.1678
-carrier,DL,15977,precision,0.2369
-carrier,DL,15977,recall,0.2947
+carrier,DL,15977,flagged_share,0.1673
+carrier,DL,15977,precision,0.2372
+carrier,DL,15977,recall,0.2942
 carrier,F9,363,late_rate,0.3609
-carrier,F9,363,flagged_share,0.7438
-carrier,F9,363,precision,0.3815
-carrier,F9,363,recall,0.7863
+carrier,F9,363,flagged_share,0.7493
+carrier,F9,363,precision,0.3824
+carrier,F9,363,recall,0.7939
 carrier,G4,182,late_rate,0.0934
 carrier,G4,182,flagged_share,0.011
 carrier,G4,182,precision,0.0
@@ -32,66 +32,66 @@ carrier,HA,92,flagged_share,0.0
 carrier,HA,92,precision,0.0
 carrier,HA,92,recall,0.0
 carrier,MQ,222,late_rate,0.2658
-carrier,MQ,222,flagged_share,0.1216
-carrier,MQ,222,precision,0.4444
+carrier,MQ,222,flagged_share,0.1171
+carrier,MQ,222,precision,0.4615
 carrier,MQ,222,recall,0.2034
 carrier,NK,4332,late_rate,0.1992
-carrier,NK,4332,flagged_share,0.2608
-carrier,NK,4332,precision,0.2796
+carrier,NK,4332,flagged_share,0.2595
+carrier,NK,4332,precision,0.2811
 carrier,NK,4332,recall,0.3662
 carrier,OO,1696,late_rate,0.1456
-carrier,OO,1696,flagged_share,0.148
-carrier,OO,1696,precision,0.3426
-carrier,OO,1696,recall,0.3482
+carrier,OO,1696,flagged_share,0.1486
+carrier,OO,1696,precision,0.3452
+carrier,OO,1696,recall,0.3522
 carrier,UA,19230,late_rate,0.1248
-carrier,UA,19230,flagged_share,0.3031
-carrier,UA,19230,precision,0.1836
-carrier,UA,19230,recall,0.446
+carrier,UA,19230,flagged_share,0.3024
+carrier,UA,19230,precision,0.1833
+carrier,UA,19230,recall,0.4444
 carrier,WN,3118,late_rate,0.2582
-carrier,WN,3118,flagged_share,0.2633
-carrier,WN,3118,precision,0.419
+carrier,WN,3118,flagged_share,0.2636
+carrier,WN,3118,precision,0.4185
 carrier,WN,3118,recall,0.4273
 carrier,YX,19176,late_rate,0.0619
-carrier,YX,19176,flagged_share,0.0688
+carrier,YX,19176,flagged_share,0.069
 carrier,YX,19176,precision,0.1911
-carrier,YX,19176,recall,0.2123
+carrier,YX,19176,recall,0.2131
 origin,EWR,33059,late_rate,0.1265
-origin,EWR,33059,flagged_share,0.2571
-origin,EWR,33059,precision,0.2036
-origin,EWR,33059,recall,0.414
+origin,EWR,33059,flagged_share,0.2568
+origin,EWR,33059,precision,0.2034
+origin,EWR,33059,recall,0.4131
 origin,JFK,31853,late_rate,0.1662
-origin,JFK,31853,flagged_share,0.2123
-origin,JFK,31853,precision,0.3664
-origin,JFK,31853,recall,0.4678
+origin,JFK,31853,flagged_share,0.2124
+origin,JFK,31853,precision,0.3665
+origin,JFK,31853,recall,0.4684
 origin,LGA,39557,late_rate,0.1317
-origin,LGA,39557,flagged_share,0.1424
-origin,LGA,39557,precision,0.3069
-origin,LGA,39557,recall,0.3319
+origin,LGA,39557,flagged_share,0.1425
+origin,LGA,39557,precision,0.3073
+origin,LGA,39557,recall,0.3325
 dest_group,Afternoon build-up routes,58627,late_rate,0.1651
-dest_group,Afternoon build-up routes,58627,flagged_share,0.2548
-dest_group,Afternoon build-up routes,58627,precision,0.2855
-dest_group,Afternoon build-up routes,58627,recall,0.4408
+dest_group,Afternoon build-up routes,58627,flagged_share,0.2547
+dest_group,Afternoon build-up routes,58627,precision,0.2856
+dest_group,Afternoon build-up routes,58627,recall,0.4406
 dest_group,Rare destinations (too few flights to judge),119,late_rate,0.084
 dest_group,Rare destinations (too few flights to judge),119,flagged_share,0.0336
 dest_group,Rare destinations (too few flights to judge),119,precision,0.5
 dest_group,Rare destinations (too few flights to judge),119,recall,0.2
 dest_group,Steady regional routes,45311,late_rate,0.1071
-dest_group,Steady regional routes,45311,flagged_share,0.1229
-dest_group,Steady regional routes,45311,precision,0.2747
-dest_group,Steady regional routes,45311,recall,0.3153
+dest_group,Steady regional routes,45311,flagged_share,0.1232
+dest_group,Steady regional routes,45311,precision,0.2749
+dest_group,Steady regional routes,45311,recall,0.3161
 dest_group,Thin routes with long delays,412,late_rate,0.3495
 dest_group,Thin routes with long delays,412,flagged_share,0.9199
 dest_group,Thin routes with long delays,412,precision,0.3668
 dest_group,Thin routes with long delays,412,recall,0.9653
 hour_band,Afternoon (noon to 6 pm),37219,late_rate,0.16
-hour_band,Afternoon (noon to 6 pm),37219,flagged_share,0.2088
-hour_band,Afternoon (noon to 6 pm),37219,precision,0.2956
+hour_band,Afternoon (noon to 6 pm),37219,flagged_share,0.2085
+hour_band,Afternoon (noon to 6 pm),37219,precision,0.2959
 hour_band,Afternoon (noon to 6 pm),37219,recall,0.3858
 hour_band,Evening (6 pm on),25253,late_rate,0.1921
-hour_band,Evening (6 pm on),25253,flagged_share,0.4818
-hour_band,Evening (6 pm on),25253,precision,0.2774
-hour_band,Evening (6 pm on),25253,recall,0.6959
+hour_band,Evening (6 pm on),25253,flagged_share,0.4824
+hour_band,Evening (6 pm on),25253,precision,0.2772
+hour_band,Evening (6 pm on),25253,recall,0.6963
 hour_band,Morning (before noon),41997,late_rate,0.0924
-hour_band,Morning (before noon),41997,flagged_share,0.0228
-hour_band,Morning (before noon),41997,precision,0.2772
+hour_band,Morning (before noon),41997,flagged_share,0.0226
+hour_band,Morning (before noon),41997,precision,0.2792
 hour_band,Morning (before noon),41997,recall,0.0683
