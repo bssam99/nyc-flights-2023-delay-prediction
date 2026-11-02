@@ -54,3 +54,15 @@ def test_task4_metrics():
     assert abs(m.loc[10, "late_or_cancelled_rate"] - 0.132) < 0.001
     g = _csv("04_metrics_by_group.csv")
     assert {"carrier", "origin", "dest_group"} <= set(g["dimension"])
+
+
+FORBIDDEN = {"dep_time", "dep_delay", "arr_time", "arr_delay", "air_time"}
+
+
+def test_task5_features():
+    t = _csv("05_feature_table.csv")
+    assert len(t) >= 10 and (t["known_in_advance"] == "yes").all()
+    assert t[["what", "why"]].notna().all().all() and not (set(t["feature"]) & FORBIDDEN)
+    f = pd.read_parquet(common.PROC / "features.parquet")
+    assert len(f) == common.FLIGHT_ROWS and set(t["feature"]) <= set(f.columns)
+    assert {"row_id", "part", "late_or_cancelled", "dep_delay"} <= set(f.columns)

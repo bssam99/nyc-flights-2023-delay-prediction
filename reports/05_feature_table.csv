@@ -1,0 +1,20 @@
+feature,what,why,known_in_advance,known_because
+hour,Scheduled departure hour (0-23),Delays build up through the day (finding 1).,yes,published schedule
+weekday,Day of the week (0 = Monday),Some days are busier or more disrupted than others.,yes,published schedule
+distance,Distance of the flight in miles,Longer routes may behave differently (and a proxy for the route).,yes,published schedule
+carrier,Airline code,Airlines differ a lot in reliability (finding 3).,yes,published schedule
+origin,"Departure airport: JFK, LGA or EWR",The three airports have different delay levels.,yes,published schedule
+dest_group,"Type of destination from notebook 03 (0 steady, 1 afternoon build-up, 2 thin routes, -1 rare)",Packs the delay pattern of 118 destinations into 4 values.,yes,built from January-September only
+origin_hour_flights,Flights scheduled from the same airport in the same hour,A crowded hour means queues and knock-on delays.,yes,published schedule
+plane_age,Age of the plane in 2023 (years),Older planes may need more turnaround time.,yes,"plane table, known when the flight is scheduled"
+seats,Number of seats on the plane,Plane size separates small regional planes from big ones.,yes,plane table
+plane_known,1 if the plane was found in the plane table,Tells the model when the plane columns are empty.,yes,plane table
+temp,Temperature (F) 2 hours before the scheduled hour,Weather affects how many flights an airport can handle (finding 4).,yes,weather reading from 2 hours before
+wind_speed,Wind speed (mph) 2 hours before,Strong wind slows departures.,yes,weather reading from 2 hours before
+wind_gust,Wind gusts (mph) 2 hours before,Gusts can stop departures.,yes,weather reading from 2 hours before
+visib,Visibility (miles) 2 hours before,Low visibility cuts airport capacity.,yes,weather reading from 2 hours before
+precip,Rain or snow (inches) 2 hours before,Rain and snow cause delays (finding 4).,yes,weather reading from 2 hours before
+pressure,Air pressure (millibars) 2 hours before,Falling pressure often comes with a storm.,yes,weather reading from 2 hours before
+weather_filled,1 if that weather reading was filled in from an earlier hour,Tells the model how fresh the reading is.,yes,weather table
+prev_dep_delay,"Delay (minutes) of the same plane's earlier flight today, if it left 2+ hours before",The domino effect: the strongest signal we found (finding 2).,yes,earlier flight had already left 2 hours before
+prev_known,1 if the earlier flight's delay is known at prediction time,Tells the model when the previous delay column is empty.,yes,earlier flight had already left 2 hours before
