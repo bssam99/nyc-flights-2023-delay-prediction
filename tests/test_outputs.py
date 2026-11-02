@@ -33,3 +33,12 @@ def test_task2_findings_and_second_prediction():
     assert len(strange) >= 1 and strange["why"].str.len().gt(20).all()
     s = _csv("02_second_prediction.csv")
     assert len(s) == 1 and s.loc[0, "choice"] in {"minutes_late", "over_60_min"}
+
+
+def test_task3_groups():
+    g = pd.read_parquet(common.PROC / "destination_groups.parquet")
+    assert g["dest"].is_unique and len(g) == 118 and g["group_name"].notna().all()
+    r = _csv("03_groups.csv")
+    assert r[["group_name", "typical", "action"]].notna().all().all()
+    assert r["size"].sum() == 118
+    assert list(_csv("03_k_selection.csv")["k"]) == list(range(2, 11))

@@ -9,6 +9,7 @@ INK_2 = "#52514e"
 GRID = "#e6e5e1"
 BLUE = "#2a78d6"     # palette slot 1
 ORANGE = "#eb6834"   # palette slot 2
+AQUA = "#1baf7a"     # palette slot 3 (the first three slots stay distinct in every chart type)
 GREY = "#b9b8b2"     # context: everything that is not the point of the chart
 
 FIGURES = common.REPORTS / "figures"
