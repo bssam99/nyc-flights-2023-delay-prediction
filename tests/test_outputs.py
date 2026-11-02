@@ -110,3 +110,23 @@ def test_task7_cards():
     assert v2["mae_model"] < v2["mae_dumb"] and v2["gain_minutes"] > 0
     w = _csv("07_weekly_scores.csv")
     assert w.groupby("prediction")["week_start"].nunique().min() >= 12
+
+
+import re
+
+BANNED = ["PR-AUC", "AUC", "k-means", "silhouette", "chi-square", "logistic", "gradient boosting",
+          "MLP", "neural network", "hyperparameter", "permutation", "recall", "precision"]
+
+
+def test_task8_deck():
+    from pptx import Presentation
+    pdf = (common.ROOT / "slides" / "deck.pdf").read_bytes()
+    assert 11 <= len(re.findall(rb"/Type\s*/Page(?!s)", pdf)) <= 14
+    prs = Presentation(common.ROOT / "slides" / "deck.pptx")
+    assert 11 <= len(prs.slides) <= 14
+    assert all(slide.has_notes_slide and slide.notes_slide.notes_text_frame.text.strip() for slide in prs.slides)
+    sm = pd.read_csv(common.ROOT / "slides" / "source_map.csv")
+    assert list(sm.columns) == ["slide", "text", "file", "column"] and len(sm) > 0
+    assert all((common.REPORTS / f).exists() for f in sm["file"].unique())
+    visible = " ".join(sh.text_frame.text for slide in prs.slides for sh in slide.shapes if sh.has_text_frame)
+    assert not [w for w in BANNED if w.lower() in visible.lower()]

@@ -1,0 +1,46 @@
+slide,text,file,column
+1,"435,352",04_metrics_by_month.csv,flights (sum)
+2,22.9%,04_metrics_by_month.csv,"late_or_cancelled_rate, flights (weighted)"
+3,"435,352",04_metrics_by_month.csv,flights (sum)
+3,14 checks,01_data_report.csv,problem (count of rows)
+3,"10,738",01_data_report.csv,rows (cancelled)
+3,"1,913",01_data_report.csv,rows (missing_tailnum)
+3,826,01_data_report.csv,rows (weather_gap)
+4,13%,02_findings.csv,number (row 1)
+4,40%,02_findings.csv,number (row 1)
+5,61%,02_findings.csv,number (row 2)
+5,25%,02_findings.csv,number (row 2)
+5,36,02_findings.csv,number (row 4)
+5,18,02_findings.csv,number (row 4)
+6,35%,02_findings.csv,number (row 3)
+6,18%,02_findings.csv,number (row 3)
+7,64,03_groups.csv,size (steady)
+7,39,03_groups.csv,size (build-up)
+7,6,03_groups.csv,size (thin)
+7,53%,03_groups.csv,typical (thin)
+8,8.7%,04_metrics_by_month.csv,cancellation_rate (July)
+8,35%,02_findings.csv,number (row 5)
+8,39%,04_metrics_by_month.csv,late_or_cancelled_rate (July)
+8,12%,04_metrics_by_month.csv,late_or_cancelled_rate (November)
+9,"20,894",07_value_first.csv,flagged
+9,"5,944",07_value_first.csv,hits
+9,"2,937",07_value_first.csv,"hits, recall, random_recall"
+9,28,07_value_first.csv,precision
+9,14,07_value_first.csv,base_rate
+9,40%,07_value_first.csv,recall
+9,20%,07_value_first.csv,random_recall
+10,0.14,07_value_second.csv,gain_minutes
+10,3.4,07_value_second.csv,lift
+10,21%,07_value_second.csv,precision_long
+10,6%,07_value_second.csv,base_rate_long
+11,2 in 10,07_value_first.csv,share_flagged
+11,"20,894",07_value_first.csv,flagged
+11,32%,07_weekly_scores.csv,value (median of full weeks x 0.8)
+11,38%,07_weekly_scores.csv,value (min)
+11,46%,07_weekly_scores.csv,value (max)
+11,1 in 20,07_value_second.csv,flagged
+11,"5,212",07_value_second.csv,flagged
+12,21%,06a_calibration.csv,"mean_predicted, flights (weighted)"
+12,14%,07_value_first.csv,base_rate
+12,6%,06a_group_errors.csv,"value (hour_band recall, morning)"
+12,71%,06a_group_errors.csv,"value (hour_band recall, evening)"
