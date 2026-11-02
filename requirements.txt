@@ -1,9 +1,11 @@
 ipykernel==6.29.5
+ipython==9.14.0
 matplotlib==3.10.9
 nbconvert==7.17.1
 nbformat==5.10.4
 numpy==2.4.4
 pandas==3.0.3
+pillow==12.2.0
 pyarrow==26.0.0
 pytest==9.2.0
 python-pptx==1.0.2
