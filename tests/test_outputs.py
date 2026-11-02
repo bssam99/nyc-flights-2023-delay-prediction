@@ -128,6 +128,57 @@ BANNED = ["PR-AUC", "AUC", "k-means", "silhouette", "chi-square", "logistic", "g
           "MLP", "neural network", "hyperparameter", "permutation", "recall", "precision"]
 
 
+def _deck_text():
+    from pptx import Presentation
+    prs = Presentation(common.ROOT / "slides" / "deck.pptx")
+    return [" ".join(sh.text_frame.text for sh in slide.shapes if sh.has_text_frame) for slide in prs.slides]
+
+
+def test_deck_numbers_match_the_raw_flights_file():
+    """Slides 2, 3, 4, 6 and 8 recomputed from data/flights.csv itself (not from our reports), and the month claims of slide 8's title."""
+    import math
+    common.require_raw_files()
+    fl = pd.read_csv(common.RAW / "flights.csv", usecols=["month", "hour", "dep_time", "dep_delay", "carrier", "tailnum"])
+    fl["late_or_cancelled"] = (fl["dep_time"].isna() | (fl["dep_delay"] > 15)).astype(int)
+    slides = _deck_text()
+    assert f"{len(fl):,}" in slides[0]
+    rate = fl["late_or_cancelled"].mean()
+    assert f"{rate:.1%}" in slides[1] and f"More than 1 flight in {math.ceil(1 / rate)}" in slides[1] and "Nearly 1 flight in 4" not in slides[1]
+    assert f"{int(fl['dep_time'].isna().sum()):,} cancelled flights" in slides[2] and f"{int(fl['tailnum'].isna().sum()):,} flights with no plane number" in slides[2]
+    train = fl[fl["month"] <= 9]
+    morning, evening = (train[train["hour"].between(a, b)]["late_or_cancelled"].mean() for a, b in [(6, 8), (19, 21)])
+    assert f"{morning:.0%} → {evening:.0%}" in slides[3] and "January-September" in slides[3]
+    by_month = fl.groupby("month")["late_or_cancelled"].mean()
+    cancelled_in_july = fl[fl["month"] == 7]["dep_time"].isna().mean()
+    assert by_month.idxmax() == 7 and by_month.idxmin() == 11, "slide 8's title says July was the worst month and November the calmest"
+    assert "July was the worst month" in slides[7] and "November the calmest" in slides[7] and "autumn" not in slides[7].lower()
+    assert f"{by_month[7]:.0%} vs {by_month[11]:.0%}" in slides[7] and f"In July {cancelled_in_july:.1%}" in slides[7]
+    airlines = train.groupby("carrier")["late_or_cancelled"].agg(["mean", "size"]).query("size >= 5000")["mean"]
+    assert f"{airlines.max():.0%} vs {airlines.min():.0%}" in slides[5] and "January-September" in slides[5]
+
+
+def test_prediction2_small_gain_is_not_blamed_on_a_few_extreme_delays():
+    """Measured: without the 1% most delayed flights the model's gain over the usual-delay guess is smaller, not larger, so
+    the extreme delays are not why the gain is small. The slide and card 2 must not say so."""
+    r = _csv("06b_results.csv").pivot(index="model", columns="metric", values="value")
+    gain = r.loc["dumb_median", "mae_minutes"] - r.loc["gradient_boosting", "mae_minutes"]
+    gain_without = r.loc["dumb_median", "mae_minutes_without_top1pct"] - r.loc["gradient_boosting", "mae_minutes_without_top1pct"]
+    assert gain_without < gain
+    v = _csv("07_value_second.csv").iloc[0]
+    slide10 = _deck_text()[9]
+    assert "cannot be foreseen" not in slide10 and "extreme" not in slide10
+    assert f"{v['gain_minutes']:.2f} minutes" in slide10 and f"{v['gain_median_minutes']:.1f} minutes closer" in slide10
+    assert f"{v['precision_long']:.1%} against {v['base_rate_long']:.1%}" in slide10 and "as many long delays" in slide10
+    card2 = _csv("07_cards.csv").query("card == 'second' and line == 'Weak spots'")["text"].iloc[0]
+    assert "handful" not in card2 and "cannot be foreseen" not in card2 and f"{gain_without:.2f} minutes" in card2
+
+
+def test_slide_5_says_for_how_many_flights_the_earlier_flight_is_known_in_time():
+    k = _csv("02_key_numbers.csv").astype(str).set_index("name")["value"]
+    slide5 = _deck_text()[4]
+    assert f"for the {k['known_earlier_pct']}% of flights whose plane's earlier flight had already left by then" in slide5 and "January-September" in slide5
+
+
 def test_task8_deck():
     from pptx import Presentation
     pdf = (common.ROOT / "slides" / "deck.pdf").read_bytes()

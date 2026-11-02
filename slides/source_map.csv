@@ -1,6 +1,6 @@
 slide,text,file,column
 1,"435,352",04_metrics_by_month.csv,flights (sum)
-2,4,04_metrics_by_month.csv,1 / late_or_cancelled_rate (weighted)
+2,5,04_metrics_by_month.csv,ceil(1 / late_or_cancelled_rate (weighted))
 2,22.9%,04_metrics_by_month.csv,"late_or_cancelled_rate, flights (weighted)"
 3,"435,352",04_metrics_by_month.csv,flights (sum)
 3,14 checks,01_data_report.csv,problem (count of rows)
@@ -13,6 +13,7 @@ slide,text,file,column
 5,25%,02_findings.csv,number (row 2)
 5,37,02_domino_adjusted.csv,raw_gap_points
 5,26,02_domino_adjusted.csv,same_day_gap_points
+5,29%,02_key_numbers.csv,known_earlier_pct
 5,36,02_findings.csv,number (row 4)
 5,18,02_findings.csv,number (row 4)
 6,35%,02_findings.csv,number (row 3)
@@ -37,9 +38,10 @@ slide,text,file,column
 9,40%,07_value_first.csv,recall
 9,20%,07_value_first.csv,random_recall
 10,0.14,07_value_second.csv,gain_minutes
+10,0.5,07_value_second.csv,gain_median_minutes
 10,3.4,07_value_second.csv,lift
-10,21%,07_value_second.csv,precision_long
-10,6%,07_value_second.csv,base_rate_long
+10,21.2%,07_value_second.csv,precision_long
+10,6.3%,07_value_second.csv,base_rate_long
 11,2 in 10,07_value_first.csv,share_flagged
 11,"20,894",07_value_first.csv,flagged
 11,30%,07_value_first.csv,recheck_line

@@ -8,6 +8,7 @@ The PPTX needs only python-pptx; the PDF export uses Microsoft PowerPoint (Windo
 """
 import datetime
 import json
+import math
 import re
 import subprocess
 import sys
@@ -68,7 +69,7 @@ calibration = csv("06a_calibration.csv")
 
 morning_pct, evening_pct, late_plane_pct, ok_plane_pct = (key[n] for n in ["morning_pct", "evening_pct", "late_plane_pct", "ok_plane_pct"])
 airline_best, best_pct, airline_worst, worst_pct = (key[n] for n in ["airline_best", "best_pct", "airline_worst", "worst_pct"])
-plane_points, weather_points, ten_days_pct = (key[n] for n in ["plane_points", "weather_points", "ten_days_pct"])
+plane_points, weather_points, ten_days_pct, known_earlier_pct = (key[n] for n in ["plane_points", "weather_points", "ten_days_pct", "known_earlier_pct"])
 dom_adj = csv("02_domino_adjusted.csv").iloc[0]
 thin_late = int(groups.loc[2, "late_pct"])
 july = months.set_index("month").loc[7]
@@ -147,14 +148,14 @@ PLAIN = {
     "A1": "re-ran everything from scratch; the checks passed",
     "A2": "recomputed a headline number from the raw data",
     "A3": "recomputed the value of the warning list",
-    "A4": "read how the models are kept from using future information",
+    "A4": "read how future information is kept out of the models",
     "A5": "confirmed the test months stay untouched until the end",
-    "A6": "read the leak found by the independent review and how it was fixed",
-    "A7": "read the later leaks found by the independent reviews and how they were fixed",
+    "A6": "read the first leak the review found, and its fix",
+    "A7": "read the later leaks the reviews found, and their fixes",
     "B1": "went through the data-cleaning decisions", "B2": "went through the findings and their checks",
     "B3": "went through the destination groups", "B4": "recomputed a monthly number from the raw data",
     "B5": "went through each column built for the models", "B6": "went through the model results",
-    "B7": "went through the two decision cards and checked their numbers", "B8": "read the log of mistakes found along the way",
+    "B7": "went through the two decision cards and checked their numbers", "B8": "read the mistakes found along the way",
 }
 
 
@@ -164,7 +165,7 @@ def ticked_checks():
     ids = record["checks_done"]
     out = [PLAIN[i] for i in ids if i.startswith("A") and i in PLAIN]
     b = [i for i in ids if i.startswith("B")]
-    out += ["went through all 8 notebooks and the log of mistakes"] if len(b) == 8 else [PLAIN[i] for i in b if i in PLAIN]
+    out += ["went through all 8 notebooks and the mistakes found"] if len(b) == 8 else [PLAIN[i] for i in b if i in PLAIN]
     return out, bool(record["rechecked_on_the_final_version"])
 
 
@@ -328,8 +329,8 @@ notes(s, 1, "Open with the question the agency cares about: can we know two hour
 
 # 2 problem
 say2 = "If we knew two hours before which flights are at risk, we could warn the client and arrange a backup."
-assert 0.20 <= overall_rate < 0.25, "the slide-2 title says 'nearly 1 flight in 4'"
-s = new_slide(2, f"Nearly 1 flight in {src(2, str(round(1 / overall_rate)), '04_metrics_by_month.csv', '1 / late_or_cancelled_rate (weighted)')} leaves late or is cancelled")
+assert 1 / 5 < overall_rate < 1 / 4, "the slide-2 title says 'more than 1 flight in 5'"
+s = new_slide(2, f"More than 1 flight in {src(2, str(math.ceil(1 / overall_rate)), '04_metrics_by_month.csv', 'ceil(1 / late_or_cancelled_rate (weighted))')} leaves late or is cancelled")
 big_stat(s, src(2, f"{overall_rate:.1%}", "04_metrics_by_month.csv", "late_or_cancelled_rate, flights (weighted)"), "of flights left more than 15 minutes late, or never left", BLUE, say2, say_y=3.9)
 for i, (head, body) in enumerate([("Late means", "More than 15 minutes after the scheduled time, or the flight never leaves."),
                                   ("Why it matters", "A client misses a connection or a meeting."),
@@ -354,22 +355,22 @@ notes(s, 3, say3)
 say4 = "Flights scheduled in the morning are rarely late; in the evening far more of them are. <b>Clients with tight connections should fly in the morning.</b>"
 chart_slide(4, "The risk of delay climbs through the day",
             f'{src(4, f"{morning_pct}%", "02_findings.csv", "number (row 1)")} → {src(4, f"{evening_pct}%", "02_findings.csv", "number (row 1)")}',
-            "late or cancelled: flights at 6-9 am against 7-10 pm", ORANGE, say4, prepared("02_hour.png"), "Late or cancelled share by scheduled departure hour")
+            "late or cancelled, January-September: flights at 6-9 am against 7-10 pm", ORANGE, say4, prepared("02_hour.png"), "Late or cancelled share by scheduled departure hour")
 
 # 5 domino
 say5 = (f"When the same plane's earlier flight left more than 15 minutes late, <b>{src(5, f'{late_plane_pct}%', '02_findings.csv', 'number (row 2)')}</b> of its next flights are late or cancelled, "
         f"against <b>{src(5, f'{ok_plane_pct}%', '02_findings.csv', 'number (row 2)')}</b> otherwise. Part of that is a shared bad day: within the same day, airport and part of the day, the overall gap of "
-        f"{src(5, f'{dom_adj.raw_gap_points:.0f}', '02_domino_adjusted.csv', 'raw_gap_points')} points shrinks to {src(5, f'{dom_adj.same_day_gap_points:.0f}', '02_domino_adjusted.csv', 'same_day_gap_points')}. The agency can see the earlier flight two hours ahead. "
-        "This is against everyday bad weather; the rarest severe storms can be worse.")
+        f"{src(5, f'{dom_adj.raw_gap_points:.0f}', '02_domino_adjusted.csv', 'raw_gap_points')} points shrinks to {src(5, f'{dom_adj.same_day_gap_points:.0f}', '02_domino_adjusted.csv', 'same_day_gap_points')}. The agency can see it two hours ahead for the {src(5, f'{known_earlier_pct}%', '02_key_numbers.csv', 'known_earlier_pct')} of flights whose plane's earlier flight had already left by then. "
+        "Rare severe storms can be worse than everyday weather.")
 chart_slide(5, "A late earlier flight is a strong warning sign, stronger than everyday bad weather",
             f'+{src(5, plane_points, "02_findings.csv", "number (row 4)")} vs +{src(5, weather_points, "02_findings.csv", "number (row 4)")}',
-            "points of extra risk: a late earlier flight against everyday bad weather (rain, snow, low visibility, strong gusts)", ORANGE, say5, prepared("02_weather.png"), "Risk after a late earlier flight and in bad weather")
+            "points of extra risk, January-September: a late earlier flight against everyday bad weather (rain, snow, low visibility, strong gusts)", ORANGE, say5, prepared("02_weather.png"), "Risk after a late earlier flight and in bad weather")
 
 # 6 airlines
 say6 = "Even when we compare flights from the same airport at the same time of day, the gap remains. <b>For a tight connection, prefer the steadier airlines.</b>"
 chart_slide(6, "Airlines differ a lot, and airport and time of day do not explain it",
             f'{src(6, f"{worst_pct}%", "02_findings.csv", "number (row 3)")} vs {src(6, f"{best_pct}%", "02_findings.csv", "number (row 3)")}',
-            f"late or cancelled: {airline_worst} against {airline_best}", ORANGE, say6, prepared("02_airlines.png"), "Late or cancelled share by airline")
+            f"late or cancelled, January-September: {airline_worst} against {airline_best}", ORANGE, say6, prepared("02_airlines.png"), "Late or cancelled share by airline")
 
 # 7 destination types
 steady, build, thin = groups.loc[0], groups.loc[1], groups.loc[2]
@@ -377,7 +378,7 @@ s = new_slide(7, "Destinations fall into three types, each needing a different a
 for i, (color, head, body) in enumerate([
         (BLUE, f"{src(7, str(int(steady['size'])), '03_groups.csv', 'size (steady)')} steady routes", "Short delays all day, but a few more cancellations. Keep a backup for tight connections."),
         (ORANGE, f"{src(7, str(int(build['size'])), '03_groups.csv', 'size (build-up)')} afternoon build-up routes", "Fine in the morning, late after noon. Offer a morning flight."),
-        (AQUA, f"{src(7, str(int(thin['size'])), '03_groups.csv', 'size (thin)')} thin routes", f"About one flight a day, {src(7, f'{thin_late}%', '03_groups.csv', 'typical (thin)')} of them late. Offer a flexible ticket.")]):
+        (AQUA, f"{src(7, str(int(thin['size'])), '03_groups.csv', 'size (thin)')} thin routes", f"About one flight a day on each route, {src(7, f'{thin_late}%', '03_groups.csv', 'typical (thin)')} of them late. Offer a flexible ticket.")]):
     y = 1.75 + i * 1.7
     add_card(s, MX, y, 4.75, 1.5, [{"text": head, "size": 18, "bold": True, "after": 4}, {"text": body, "size": 16}], f"Card: {head[:28]}", text_margin=0.22 + 0.0, anchor=MSO_ANCHOR.MIDDLE)
     add_dot(s, MX + 4.75 - 0.42, y + 0.18, 0.22, color, f"Colour key {i + 1}")
@@ -387,8 +388,8 @@ notes(s, 7, "Destinations were grouped by their delay pattern. Each type gets a 
 
 # 8 months
 say8 = (f"In July <b>{src(8, f'{july.cancellation_rate:.1%}', '04_metrics_by_month.csv', 'cancellation_rate (July)')}</b> of flights were cancelled. Just 10 days hold <b>{src(8, f'{ten_days_pct}%', '02_findings.csv', 'number (row 5)')}</b> "
-        "of all cancellations up to September, and the weather at the airports does not fully explain them: the cause is not in our data.")
-chart_slide(8, "July was the worst month and autumn the calmest",
+        "of all cancellations up to September. The weather at the airports explains them only partly, and our data does not show what else was behind them.")
+chart_slide(8, "July was the worst month, November the calmest",
             f'{src(8, f"{july.late_or_cancelled_rate:.0%}", "04_metrics_by_month.csv", "late_or_cancelled_rate (July)")} vs {src(8, f"{november.late_or_cancelled_rate:.0%}", "04_metrics_by_month.csv", "late_or_cancelled_rate (November)")}',
             "late or cancelled: July against November. These are the monthly numbers to follow.", ORANGE, say8, prepared("04_monthly_metrics.png"), "Four monthly measures of delays and cancellations")
 
@@ -406,11 +407,11 @@ add_picture_fit(s, draw_gains(), 5.45, 1.65, 7.3, 5.2, "Share of late flights re
 notes(s, 9, say9)
 
 # 10 prediction 2
-say10 = (f"On average the predicted delay is only <b>{src(10, f'{second.gain_minutes:.2f}', '07_value_second.csv', 'gain_minutes')} minutes</b> closer than a simple guess, because a few extreme delays cannot be foreseen. "
+say10 = (f"On average the predicted delay is only <b>{src(10, f'{second.gain_minutes:.2f}', '07_value_second.csv', 'gain_minutes')} minutes</b> closer than a simple guess, and only {src(10, f'{second.gain_median_minutes:.1f}', '07_value_second.csv', 'gain_median_minutes')} minutes closer for the usual flight: most flights leave close to schedule, so the guess is already near. "
          "<b>We use it to rank flights for a connection check, not to promise a number of minutes.</b>")
 chart_slide(10, "Prediction 2: how late will a flight be? A modest gain, honestly reported",
             f'{src(10, f"{second.lift:.1f}", "07_value_second.csv", "lift")}×',
-            f"more long delays (45+ minutes) among the 5% of flights with the highest predicted delay: {src(10, f'{second.precision_long:.0%}', '07_value_second.csv', 'precision_long')} against {src(10, f'{second.base_rate_long:.0%}', '07_value_second.csv', 'base_rate_long')}",
+            f"as many long delays (45+ minutes) among the 5% of flights with the highest predicted delay: {src(10, f'{second.precision_long:.1%}', '07_value_second.csv', 'precision_long')} against {src(10, f'{second.base_rate_long:.1%}', '07_value_second.csv', 'base_rate_long')}",
             BLUE, say10, prepared("06b_by_predicted_tenth.png"), "Real delays by tenth of flights sorted by predicted delay")
 
 # 11 decision cards
@@ -446,7 +447,7 @@ limits = [{**H, "text": "What we do not know"},
 nxt = [{**H, "text": "What comes next"}] + [{"text": t, "size": 16, "color": "FFFFFF", "bullet": True, "after": 5} for t in
                                       ["Confirm the two capacities with the agency.", "Add a second year, so seasons can be learned.", "Set a separate warning quota for each part of the day.", "Add the agency's own costs to put a value on each warning."]]
 ai = [{**H, "text": "How AI helped"},
-      {"text": "Claude Code, an AI assistant, wrote the code, ran the analysis and drafted these slides, following my instructions. It also recorded its own mistakes and corrections.", "size": 14, "color": "FFFFFF", "after": 6}] + owner
+      {"text": "Claude Code, an AI assistant, wrote the code, ran the analysis and drafted these slides, following my instructions. It made mistakes too, found and fixed along the way (see the README).", "size": 14, "color": "FFFFFF", "after": 6}] + owner
 for i, (content, w) in enumerate([(limits, 3.6), (nxt, 3.0), (ai, 5.13)]):
     x = MX + [0, 3.8, 7.0][i]
     add_card(s, x, 1.75, w, 4.6, content, f"Panel {i + 1}", fill=NAVY2, text_margin=0.25)
