@@ -245,7 +245,7 @@ def test_task3_steady_routes_are_not_oversold():
 
 def test_readme_discloses_that_the_test_months_overall_rates_were_seen_in_design():
     readme = (common.ROOT / "README.md").read_text(encoding="utf-8")
-    assert "D-004" in readme and "never seen" not in readme.lower()
+    assert "overall rates" in readme and "never seen" not in readme.lower()
 
 
 def _cancelled_within(carrier):
@@ -351,23 +351,30 @@ def test_cards_have_no_time_s_wording():
     assert not _csv("07_cards.csv")["text"].str.contains(r"time\(s\)", regex=True).any()
 
 
-def test_owner_review_statement_says_which_version_was_checked():
-    """The owner's checks were reported for earlier versions. Until the owner re-checks the final one (the flag in the
-    checklist), the README, the checklist and the slide must say so, and the test count they quote must be the real one."""
-    checklist = (common.ROOT / "second-brain" / "review-checklist.md").read_text(encoding="utf-8")
+def test_owner_review_record_matches_the_readme_and_slide_12():
+    """The review the owner reported is kept in slides/owner_review.json (the deck reads it). The README and slide 12 must say the
+    same: which checks, and whether they were repeated on the final version. The test count the README quotes must be the real one."""
+    import json
+    record = json.loads((common.ROOT / "slides" / "owner_review.json").read_text(encoding="utf-8"))
+    expected_ids = [f"A{i}" for i in range(1, 8)] + [f"B{i}" for i in range(1, 9)]
+    assert set(record["checks_done"]) <= set(expected_ids) and record["recorded_on_the_owners_word"] is True
     readme = (common.ROOT / "README.md").read_text(encoding="utf-8")
-    flag = re.search(r"\*\*Re-check on the final version:\*\* (pending|done)", checklist)
-    assert flag, "the checklist must carry a line '**Re-check on the final version:** pending' or 'done'"
     collected = subprocess.run([sys.executable, "-m", "pytest", "--collect-only", "-q", str(common.ROOT / "tests")], capture_output=True, text=True, cwd=common.ROOT).stdout
     count = int(re.search(r"(\d+) tests? collected", collected).group(1))      # what pytest really collects, also parametrised tests and methods
-    assert f"then `{count} passed`" in checklist and f"# {count} tests" in readme, f"quote {count} tests"
+    assert f"# {count} tests" in readme, f"the README must quote {count} tests"
     from pptx import Presentation
     slide12 = " ".join(sh.text_frame.text for sh in Presentation(common.ROOT / "slides" / "deck.pptx").slides[11].shapes if sh.has_text_frame)
-    if flag.group(1) == "pending":
-        assert "earlier version" in readme and "not yet repeated" in readme
-        assert "earlier version of the project" in slide12
-    else:      # the owner repeated the checks: the README (edited by hand) and the slide must no longer say otherwise
-        assert "not yet repeated" not in readme and "earlier version of the project" not in slide12
+    if record["rechecked_on_the_final_version"]:
+        assert sorted(record["checks_done"]) == sorted(expected_ids), "the owner said every check was repeated"
+        assert "checks A1 to A7 and B1 to B8" in readme and "not yet repeated" not in readme and "earlier version of the project" not in slide12
+        assert record["project_commit"] in readme
+    else:
+        assert "earlier version" in readme and "not yet repeated" in readme and "earlier version of the project" in slide12
+
+
+def test_readme_does_not_point_to_the_notes_folder_that_is_kept_only_locally():
+    readme = (common.ROOT / "README.md").read_text(encoding="utf-8")
+    assert "second-brain" not in readme and "second brain" not in readme.lower() and not re.search(r"[DPR]-0\d\d", readme)
 
 
 def test_readme_names_the_python_version_the_pinned_packages_need():

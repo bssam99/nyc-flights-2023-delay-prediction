@@ -7,6 +7,7 @@ It writes slides/deck.pptx, slides/source_map.csv and slides/deck.pdf.
 The PPTX needs only python-pptx; the PDF export uses Microsoft PowerPoint (Windows), which must be installed.
 """
 import datetime
+import json
 import re
 import subprocess
 import sys
@@ -158,14 +159,13 @@ PLAIN = {
 
 
 def ticked_checks():
-    text = (ROOT / "second-brain" / "review-checklist.md").read_text(encoding="utf-8")
-    ids = re.findall(r"- \[x\] \*\*([AB]\d)\.", text)
+    """The checks the owner reported (slides/owner_review.json) and whether they were repeated on the final version."""
+    record = json.loads((SLIDES / "owner_review.json").read_text(encoding="utf-8"))
+    ids = record["checks_done"]
     out = [PLAIN[i] for i in ids if i.startswith("A") and i in PLAIN]
     b = [i for i in ids if i.startswith("B")]
     out += ["went through all 8 notebooks and the log of mistakes"] if len(b) == 8 else [PLAIN[i] for i in b if i in PLAIN]
-    state = re.search(r"\*\*Re-check on the final version:\*\* (pending|done)", text)
-    assert state, "the checklist needs a line '**Re-check on the final version:** pending' or 'done'"
-    return out, state.group(1) == "done"
+    return out, bool(record["rechecked_on_the_final_version"])
 
 
 # ---------------------------------------------------------------- PowerPoint helpers

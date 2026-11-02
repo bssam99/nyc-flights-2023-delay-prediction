@@ -4,3 +4,6 @@ data/
 __pycache__/
 .pytest_cache/
 ML_week_tasks.xlsx
+
+# notes kept only on the owner's computer
+second-brain/
