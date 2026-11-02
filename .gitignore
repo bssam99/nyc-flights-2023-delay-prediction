@@ -1,0 +1,6 @@
+data/
+.env
+.ipynb_checkpoints/
+__pycache__/
+.pytest_cache/
+ML_week_tasks.xlsx
